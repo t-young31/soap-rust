@@ -2,16 +2,16 @@ use crate::math::factorial_f;
 use crate::math::msbf_first;
 
 
-struct IntegrandArguments{
+pub struct IntegrandArguments{
     integer_args: Vec<i32>,
     float_args: Vec<f64>,
 }
 
 
-pub fn trapz(integrand: &dyn Fn(f64, IntegrandArguments) -> f64,
+pub fn trapz(integrand: &dyn Fn(f64, &IntegrandArguments) -> f64,
              a:         f64,
              b:         f64,
-             args:      IntegrandArguments,
+             args:      &IntegrandArguments,
              dx:        f64) -> f64{
     /* Integrate a function (the integrand) from a->b
 
@@ -39,11 +39,22 @@ pub fn trapz(integrand: &dyn Fn(f64, IntegrandArguments) -> f64,
 
         let args = IntegrandArguments{Vec::new(), Vec::new()};
 
-        println!("{}", trapz(x_sq, 0.0, 1.0, args))  ----> 0.3333 
+        println!("{}", trapz(x_sq, 0.0, 1.0, args))  ----> 0.3333..
     -------------------------------------------------------------------
     */
+    let n = ((b - a).abs() / dx).floor() as u32;     // Number of points
 
-    
+    let mut integral: f64 = integrand(a, args) / 2_f64;
+    let mut x: f64 = a;
+
+    for _ in 1..n {
+        x += dx;
+        integral += integrand(x, args);
+
+    } 
+    integral += integrand(b, args) / 2_f64;
+
+    integral * dx
 }
 
 
@@ -117,6 +128,21 @@ mod tests{
 
         // Wolfram: integral 0 to +oo x^6*exp(-3*x^2) dx
         assert!(is_close(gaussian_2m(3, 3.0), 5_f64*(PI/3_f64).sqrt()/144_f64, 1E-8));
+    }
+
+    #[test]
+    fn test_trapz_x_sq(){
+        // Test that the trapesium integrator can integrate x^2
+
+        fn x_sq(x: f64, _args: &IntegrandArguments) -> f64{
+            x * x
+        }
+
+        let args = IntegrandArguments{integer_args: vec![],
+                                     float_args:    vec![] };
+
+        assert!(is_close(trapz(&x_sq, 0.0, 1.0, &args, 1E-6), 1_f64/3_f64, 1E-4));
+
     }
 
     fn xn_2_integrand(x: f64, args: IntegrandArguments) -> f64{
