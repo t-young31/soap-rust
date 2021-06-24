@@ -2,9 +2,10 @@ use crate::math::factorial_f;
 use crate::math::msbf_first;
 
 
+#[derive(Default)]
 pub struct IntegrandArguments{
-    integer_args: Vec<i32>,
-    float_args: Vec<f64>,
+    pub integer_args: Vec<i32>,
+    pub float_args: Vec<f64>,
 }
 
 
@@ -78,6 +79,7 @@ pub fn gaussian_2m(m: i32, k: f64) -> f64{
     d_factorial * (std::f64::consts::PI / k).sqrt() / (k.powi(m) * 2_f64.powi(m+1))
 }
 
+
 pub fn xn_2_gaussian_msbf(n: i32, a: f64, b: f64) -> f64{
     /*
     Calculate the value of
@@ -116,7 +118,6 @@ mod tests{
         (x - y).abs() <= atol
     }
 
-
     #[test]
     fn test_gaussian_2m(){
 
@@ -139,8 +140,7 @@ mod tests{
             x * x
         }
 
-        let args = IntegrandArguments{integer_args: vec![],
-                                      float_args:   vec![]};
+        let args: IntegrandArguments = Default::default();
 
         assert!(is_close(trapz(&x_sq, 0.0, 1.0, &args, 1E-6), 1_f64/3_f64, 1E-4));
     }
@@ -189,16 +189,6 @@ mod tests{
     }
 
 
-    fn xn_2_integrand(x: f64, args: IntegrandArguments) -> f64{
-        // x^n+2 e^(-ax^2) i_n(bx)
-        let n = args.integer_args[0];
-        let a = args.float_args[0];
-        let b = args.float_args[1];
-
-        x.powi(n+2) * (-a*x*x).exp() * msbf_first(n, b*x)
-    }
-
-
     #[test]
     fn test_xn_2_gaussian_msbf(){
         // Test xn_2_gaussian_msbf using trapezium integration
@@ -226,4 +216,4 @@ mod tests{
     }
 
 
-} // Tests
+}
