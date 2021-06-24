@@ -13,7 +13,7 @@ pub fn trapz(integrand: &dyn Fn(f64, &IntegrandArguments) -> f64,
              b:         f64,
              args:      &IntegrandArguments,
              dx:        f64) -> f64{
-    /* Integrate a function (the integrand) from a->b
+    /* Integrate a function (the integrand) from a->b using the trapezium rule
 
     Arguments:
         integrand (function):
@@ -26,10 +26,9 @@ pub fn trapz(integrand: &dyn Fn(f64, &IntegrandArguments) -> f64,
 
     -------------------------------------------------------------------
         Example:
-            
-            1
-            ∫ x^2 dx   = 1/3
-            0  
+                        1
+                        ∫ x^2 dx   = 1/3
+                        0  
 
         Define a function and arguments as:
 
@@ -37,22 +36,22 @@ pub fn trapz(integrand: &dyn Fn(f64, &IntegrandArguments) -> f64,
             x*x
         }
 
-        let args = IntegrandArguments{Vec::new(), Vec::new()};
+        let args = IntegrandArguments{integer_args: vec![], float_args:   vec![]};
 
-        println!("{}", trapz(x_sq, 0.0, 1.0, args))  ----> 0.3333..
+        println!("{}", trapz(x_sq, 0.0, 1.0, &args))  ----> 0.3333..
     -------------------------------------------------------------------
     */
-    let n = ((b - a).abs() / dx).floor() as u32;     // Number of points
+    let n = ((b - a).abs() / dx).floor() as u32;              // Number of points
 
-    let mut integral: f64 = integrand(a, args) / 2_f64;
+    let mut integral: f64 = integrand(a, args) / 2_f64;       // First: f(a)/2
     let mut x: f64 = a;
 
-    for _ in 1..n {
+    for _ in 1..n {                                           // Intermediate: f(x_n)
         x += dx;
         integral += integrand(x, args);
 
     } 
-    integral += integrand(b, args) / 2_f64;
+    integral += integrand(b, args) / 2_f64;                   // First: f(b)/2
 
     integral * dx
 }
@@ -84,7 +83,7 @@ pub fn xn_2_gaussian_msbf(n: i32, a: f64, b: f64) -> f64{
     Calculate the value of
 
     ∞
-     ∫ dx x^n+2 e^(-ax^2) i_n(bx)
+     ∫ dx x^(n+2) e^(-ax^2) i_n(bx)
     0
 
     where i_n is the modified spherical Bessel function (MSBF) of the first kind
@@ -117,6 +116,7 @@ mod tests{
         (x - y).abs() <= atol
     }
 
+
     #[test]
     fn test_gaussian_2m(){
 
@@ -130,20 +130,64 @@ mod tests{
         assert!(is_close(gaussian_2m(3, 3.0), 5_f64*(PI/3_f64).sqrt()/144_f64, 1E-8));
     }
 
+
     #[test]
     fn test_trapz_x_sq(){
-        // Test that the trapesium integrator can integrate x^2
+        // Test that the trapezium integrator can integrate x^2
 
         fn x_sq(x: f64, _args: &IntegrandArguments) -> f64{
             x * x
         }
 
         let args = IntegrandArguments{integer_args: vec![],
-                                     float_args:    vec![] };
+                                      float_args:   vec![]};
 
         assert!(is_close(trapz(&x_sq, 0.0, 1.0, &args, 1E-6), 1_f64/3_f64, 1E-4));
-
     }
+
+
+    #[test]
+    fn test_trapz_gaussian(){
+        // Test the integration of a Gaussian
+        // Wolfram: integral from -oo to +oo exp(-a*(x+b)^2) 
+
+        fn gaussian(x: f64, args: &IntegrandArguments) -> f64{
+            let a = args.float_args[0];
+            let b = args.float_args[1];
+
+            (-a*(x + b).powi(2)).exp()    // exp(-a*(x+b)^2) 
+        }
+
+        let args = IntegrandArguments{integer_args: vec![],
+                                      float_args:   vec![2.0, -3.0]};
+        
+        let integral = trapz(&gaussian, 0.0, 6.0, &args, 1E-4);
+        let analytic_integral = (PI / args.float_args[0]).sqrt();
+
+        assert!(is_close(integral, analytic_integral, 1E-4));
+    }
+
+
+    #[test]
+    fn test_trapz_gaussian_x_sq(){
+        // Test the integration of a polynomial multiplied by a Gaussian
+        // Wolfram: integral from 0 to +oo x^2 exp(-x^2) 
+
+        fn x_sq_gaussian(x: f64, args: &IntegrandArguments) -> f64{
+            let n = args.integer_args[0];
+
+            x.powi(n) * (-x.powi(2)).exp()
+        }
+
+        let args = IntegrandArguments{integer_args: vec![2],
+                                      float_args:   vec![]};
+        
+        let integral = trapz(&x_sq_gaussian, 0.0, 6.0, &args, 1E-4);
+        let analytic_integral = PI.sqrt() / 4_f64;
+
+        assert!(is_close(integral, analytic_integral, 1E-6));
+    }
+
 
     fn xn_2_integrand(x: f64, args: IntegrandArguments) -> f64{
         // x^n+2 e^(-ax^2) i_n(bx)
@@ -154,9 +198,30 @@ mod tests{
         x.powi(n+2) * (-a*x*x).exp() * msbf_first(n, b*x)
     }
 
+
     #[test]
     fn test_xn_2_gaussian_msbf(){
+        // Test xn_2_gaussian_msbf using trapezium integration
 
+        fn integrand(x: f64, args: &IntegrandArguments) -> f64{
+            // x^(n+2) e^(-ax^2) i_n(bx)
+            let n = args.integer_args[0];
+            let a = args.float_args[0];
+            let b = args.float_args[1];
+
+            x.powi(n+2) * (-a*(x*x)).exp() * msbf_first(n, b*x)
+        }
+
+        // Check multiple values of n for the spherical bessel function
+        for n in 0..4{
+            let args = IntegrandArguments{integer_args: vec![n],
+                                          float_args:   vec![1.5, 2.2]};
+
+            let analytic_integral = xn_2_gaussian_msbf(n, 1.5, 2.2);
+            let numeric_integral = trapz(&integrand, 0.0, 5.0, &args, 1E-4);
+
+            assert!(is_close(analytic_integral, numeric_integral, 1E-6));
+        }
 
     }
 
