@@ -1,5 +1,5 @@
-use crate::math::factorial_f;
-use crate::math::msbf_first;
+use crate::math::misc::factorial_f;
+use crate::math::msbf;
 
 
 #[derive(Default)]
@@ -199,7 +199,7 @@ mod tests{
             let a = args.float_args[0];
             let b = args.float_args[1];
 
-            x.powi(n+2) * (-a*(x*x)).exp() * msbf_first(n, b*x)
+            x.powi(n+2) * (-a*(x*x)).exp() * msbf::i_n(n, b*x)
         }
 
         // Check multiple values of n for the spherical bessel function

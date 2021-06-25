@@ -17,8 +17,8 @@ impl CartesianCoordinate{
         let r: f64 = self.sq_distance().sqrt();
 
         SphericalPolarCoordinate{r:     r,
-                                    theta: self.y.atan2(self.x),
-                                    phi:   (self.z / r).acos()}
+                                 theta: self.y.atan2(self.x),
+                                 phi:   (self.z / r).acos()}
     }
 
 }
@@ -28,12 +28,12 @@ pub struct SphericalPolarCoordinate{
     https://mathworld.wolfram.com/SphericalCoordinates.html
         
     
-                ^  φ
-                |---- /
+              ^  φ
+              |---- /
             z |   / 
-                | / 
-                ----------> y
-                \
+              | / 
+              ----------> y
+               \
                 \> x 
     
     r: Distance 
