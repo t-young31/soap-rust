@@ -104,7 +104,7 @@ fn newton_update_matrix_inv(m_inv_approx: &Array2::<f64>,
     */
     let mut x = m_inv_approx.clone();
 
-    for _n in 0..10{
+    for _n in 0..4{
         x = 2_f64*&x - &x.dot(&m.dot(&x));
     }
 
@@ -136,7 +136,7 @@ pub fn inverse_sqrt_db(m: &Array2::<f64>) -> Array2::<f64>{
     let mut z_inv = inverse_gauss_jordan(&z);
 
 
-    for n in 0..10{
+    for n in 0..20{
 
         y = (&y + &z_inv) / 2_f64;
         z = (&z + &y_inv) / 2_f64;
