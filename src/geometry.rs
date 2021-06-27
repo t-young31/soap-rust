@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct CartesianCoordinate{
     pub x: f64,
     pub y: f64,
@@ -22,6 +23,7 @@ impl CartesianCoordinate{
     }
 
 }
+
 
 pub struct SphericalPolarCoordinate{
     /* Spherical polar coordinate, with notation taken from 

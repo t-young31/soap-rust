@@ -363,8 +363,8 @@ mod tests{
 
         // Should be orthogonal to all n' not equal to 10 
         for n in 1..n_max{
-            println!("<g_{}| g_{}>_l=0 = {}", 
-                     n_max, n, rbfs.overlap(n_max, n, 0));
+            //println!("<g_{}| g_{}>_l=0 = {}", 
+            //         n_max, n, rbfs.overlap(n_max, n, 0));
                      
             assert!(is_close(rbfs.overlap(n_max, n, 0), 0.0, 1E-8));
         }

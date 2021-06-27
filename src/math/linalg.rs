@@ -208,7 +208,7 @@ mod tests{
 
     fn matrix_is_close(a: Array2::<f64>, b: Array2::<f64>) -> bool{
         // Are two matricies close to within an tolerance on the Frobenius norm?
-        println!("calcd: {}", a);
+        // println!("calcd: {}", a);
 
         let m = a - b;
         f_norm(&m) < 1E-8
