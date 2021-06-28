@@ -18,14 +18,24 @@ impl Structure{
 
     pub fn from(xyz_filename: String) -> Self{
         /* 
-        Construct a strucutre from a standard .xyz file
+        Construct a strucutre from a standard .xyz file with the form
+
+	2
+ 	Title line
+	H  0.0  0.0  0.0
+	H  0.0  0.0  0.0
+   
+	where there may be any amount of whitespace between the 
+        coordinates and the first item in the file should be the number
+        of total atoms in the file.
         */
         let mut structure: Structure = Default::default();
 
-        let file = File::open(xyz_filename.clone()).expect("File not found");
+        let file = File::open(xyz_filename).expect("File not found");
         let reader = std::io::BufReader::new(file);
 
         let mut line_n = 0_i32;
+        let mut n_atoms: usize = 0;
 
         for line in reader.lines() {
 
@@ -33,7 +43,7 @@ impl Structure{
             let items: Vec<&str> = _line.split(" ").collect();
 
             if line_n == 0{
-                let n_atoms: i32 = items[0].parse().unwrap();
+                n_atoms = items[0].parse().unwrap();
                 println!("Had {} atoms", n_atoms);
 
                 line_n += 1;
@@ -48,7 +58,7 @@ impl Structure{
             }
 
             
-            if items.len() == 0{
+            if items.len() == 0 || (items.len() == 1 && items[0] == ""){
                 // Assume the whole file has been parsed
                 break;
             }
@@ -61,11 +71,14 @@ impl Structure{
                                             z: items[3].clone().parse().unwrap()};
 
             structure.coordinates.push(coord);
-
             line_n += 1;
         }
+
+        if structure.coordinates.len() != n_atoms{
+	    panic!("Number of declared atoms not equal that found")
+	}
         
-        structure
+	structure
     }
 
 
@@ -89,8 +102,6 @@ impl Structure{
 mod tests{
 
     use super::*;
-    use std::env;
-    use std::path::Path;
 
 
     fn is_very_close(x: f64, y: f64) -> bool{
@@ -102,10 +113,11 @@ mod tests{
     #[test]
     fn test_simple_construction(){
 
-        let path = env!("CARGO_MANIFEST_DIR").to_owned() + "/tests/h2.xyz";
-        assert!(std::path::Path::is_file(Path::new(&path)));
+	std::fs::write("h2.xyz", 
+                       "2\n\nH 0.0 0.0 0.0\nH 1.0 0.0 0.0")
+                       .expect("Failed to write the test file!");
 
-        let strucutre = Structure::from(path);
+        let strucutre = Structure::from("h2.xyz".to_string());
 
         assert_eq!(strucutre.n_atoms(), 2);
 
@@ -116,7 +128,53 @@ mod tests{
         assert!(is_very_close(strucutre.coordinates[1].x, 1.0));
         assert!(is_very_close(strucutre.coordinates[1].y, 0.0));
         assert!(is_very_close(strucutre.coordinates[1].z, 0.0));
+    
+	std::fs::remove_file("h2.xyz").expect("Could not remove file!"); 
+
     }
+
+    
+    
+    #[test]
+    fn test_correct_format_with_blank_lines(){
+
+	std::fs::write("h2_blank_lines.xyz", 
+                       "2\n\nH 0.0 0.0 0.0\nH 1.0 0.0 0.0\n\n")
+                       .expect("Failed to write the test file!");
+
+        let strucutre = Structure::from("h2_blank_lines.xyz".to_string());
+
+        assert_eq!(strucutre.n_atoms(), 2);
+	std::fs::remove_file("h2_blank_lines.xyz").expect("Could not remove file!"); 
+
+    }
+
+
+    #[test]
+    #[should_panic]
+    fn test_incorrect_format_n_atoms(){
+
+	std::fs::write("h2_broken.xyz", 
+                       "1\n\nH 0.0 0.0 0.0\nH 1.0 0.0 0.0")
+                       .expect("Failed to write the test file!");
+
+        let _ = Structure::from("h2_broken.xyz".to_string());
+	std::fs::remove_file("h2_broken.xyz").expect("Could not remove file!"); 
+    }
+   
+    
+    #[test]
+    #[should_panic]
+    fn test_incorrect_format_not_enough_coords(){
+
+	std::fs::write("h2_broken2.xyz", 
+                       "2\n\nH 0.0 0.0\nH 1.0 0.0 0.0")
+                       .expect("Failed to write the test file!");
+
+        let _ = Structure::from("h2_broken2.xyz".to_string());
+	std::fs::remove_file("h2_broken2.xyz").expect("Could not remove file!"); 
+    }
+
 
 }
 
