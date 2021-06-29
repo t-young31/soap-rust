@@ -102,11 +102,26 @@ impl Structure{
 mod tests{
 
     use super::*;
+    use std::path::Path;
 
 
     fn is_very_close(x: f64, y: f64) -> bool{
         // Are two numbers close to within an absolute tolerance? 
         (x - y).abs() <= 1E-10
+    }
+
+
+    fn delete_when_exists(filename: &str){
+       // Pole for a file existing and quit if it does not exist after
+       // 0.5 s
+
+       for _ in 0..50{
+           std::thread::sleep(std::time::Duration::from_millis(10));
+           if Path::new(filename).exists(){
+               std::fs::remove_file(filename).expect("Could not remove file!");
+               break; 
+           } 
+       }
     }
 
 
@@ -159,7 +174,6 @@ mod tests{
                        .expect("Failed to write the test file!");
 
         let _ = Structure::from("h2_broken.xyz".to_string());
-	std::fs::remove_file("h2_broken.xyz").expect("Could not remove file!"); 
     }
    
     
@@ -172,9 +186,15 @@ mod tests{
                        .expect("Failed to write the test file!");
 
         let _ = Structure::from("h2_broken2.xyz".to_string());
-	std::fs::remove_file("h2_broken2.xyz").expect("Could not remove file!"); 
     }
 
+
+   #[test]
+   fn cleanup_test(){
+
+       delete_when_exists("h2_broken.xyz");
+       delete_when_exists("h2_broken2.xyz");
+   } 
 
 }
 
