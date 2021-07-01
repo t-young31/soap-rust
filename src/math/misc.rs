@@ -1,11 +1,11 @@
 
-
+#[inline]
 pub fn factorial(n: i32) -> i32{
     // Compute n! for n as an integer
     (1..=n).product()
 }
 
-
+#[inline]
 pub fn factorial_f(n: i32) -> f64{
     // Compute n! for n as an floating point number
     factorial(n) as f64

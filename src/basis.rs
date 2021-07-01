@@ -24,13 +24,13 @@ pub struct RadialBasisFunctions{
 
 impl RadialBasisFunctions{
 
-    fn n_max(&self) -> usize{
+    pub fn n_max(&self) -> usize{
         // n_max is just the number of rows
         self.phi.nrows()
     }
 
 
-    fn l_max(&self) -> usize{
+    pub fn l_max(&self) -> usize{
         // l_max is just the number of columns
         self.phi.ncols() - 1
     }
@@ -183,7 +183,7 @@ pub struct RadialBasisFunction{
 
 #[derive(Default)]
 pub struct PrimitiveBasisFunction{   // φ_nl(r) = r^l exp(-α_nl r^2)
-    alpha: f64,
+    pub alpha: f64,
 }
 
 
