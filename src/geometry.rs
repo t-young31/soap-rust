@@ -1,9 +1,10 @@
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct CartesianCoordinate{
     pub x: f64,
     pub y: f64,
     pub z: f64,
 }
+
 
 impl CartesianCoordinate{
 
@@ -12,7 +13,7 @@ impl CartesianCoordinate{
         self.x*self.x + self.y*self.y + self.z*self.z
     }
 
-    fn to_polar(&self) -> SphericalPolarCoordinate{
+    pub fn to_polar(&self) -> SphericalPolarCoordinate{
         // Convert this Cartesian coordinate into spherical polars
 
         let r: f64 = self.sq_distance().sqrt();
@@ -22,9 +23,19 @@ impl CartesianCoordinate{
                                  phi:   (self.z / r).acos()}
     }
 
+    pub fn shift_then_to_polar(&self, 
+                               origin: &CartesianCoordinate) -> SphericalPolarCoordinate{
+        /* Convert this coordinate to spherical polars with a defined
+        origin (defaults to (0, 0, 0))
+        */
+        CartesianCoordinate{x: &self.x - origin.x,
+                            y: &self.y - origin.y,
+                            z: &self.z - origin.z}.to_polar()
+
+    }
 }
 
-
+#[derive(Clone)]
 pub struct SphericalPolarCoordinate{
     /* Spherical polar coordinate, with notation taken from 
     https://mathworld.wolfram.com/SphericalCoordinates.html
