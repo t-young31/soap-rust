@@ -46,11 +46,13 @@ fn c_nlm(sphr_coords: Vec<SphericalPolarCoordinate>,
         let mut sum = 0_f64;
         
         for n_prime in 0..rbfs.n_max(){
+
             sum += rbfs.g[[n-1, l as usize]].beta[n_prime] 
                    * ((2_f64*a*coord.r).powi(l)
                       / (2_f64*(rbfs.phi[[n_prime, l as usize]].alpha + a)).powf(l as f64+1.5))
                     * ((a * coord.r).powi(2) / (rbfs.phi[[n_prime, l as usize]].alpha + a)).exp();
         }// n'
+        println!("Y_lm {}", sphr_harm(coord, l, m) );
         sum_i += sphr_harm(coord, l, m) * (-a*coord.r*coord.r).exp() * sum;
     }// i
     

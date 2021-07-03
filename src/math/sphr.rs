@@ -10,7 +10,7 @@ pub fn sphr_harm(coord: &SphericalPolarCoordinate,
 
     */
     if m == 0 {
-        return 1_f64
+        return 0.2820947917738781434740_f64   // 1/2 √(1/π)
     }
     
     let x = coord.theta.cos();
@@ -48,14 +48,6 @@ mod tests{
     fn is_very_close(x: f64, y: f64) -> bool{
         // Are two numbers close to within an absolute tolerance? 
         (x - y).abs() <= 1E-8
-    }
-
-
-    #[test]
-    fn test_sphr_low(){
-
-        let coord = SphericalPolarCoordinate{r: 1.0, theta: 0.0, phi: 0.0};
-        assert!(is_very_close(sphr_harm(&coord, 0, 0), 1.0));
     }
 
 
