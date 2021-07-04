@@ -108,24 +108,29 @@ fn power_spectrum(structure:      &Structure,
     let mut p = Vec::<f64>::with_capacity(sphr_nbrs.len() * n_max * (l_max + 1));
 
     for n in 1..=n_max{
-        for l in 0..=l_max{
+        for n_prime in n..=n_max{
+            for l in 0..=l_max{
 
-            let l_i32 = l as i32;
-            let mut sum_m = 0_f64;
+                let l_i32 = l as i32;
+                let mut sum_m = 0_f64;
             
-            for m_idx in 0..=2*l{   // 2l + 1 terms
+                for m_idx in 0..=2*l{   // 2l + 1 terms
 
-                let m = (m_idx as i32) - l_i32;
-                let c = c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at);
+                    let m = (m_idx as i32) - l_i32;
+                    let _c_nlm = c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at);
 
-                sum_m += c*c; 
+                    sum_m += c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at) 
+                             * c_nlm(&sphr_nbrs, &rbfs, n_prime, l, m, sigma_at);
 
-            }// m
+                    println!("n = {}, l = {}, m = {}", n, l, m); 
 
-            // Append the normalised component of the power spectrum
-            p.push(sum_m / ((2*l + 1) as f64).sqrt())        
+                }// m
 
-        }// l
+                // Append the normalised component of the power spectrum
+                p.push(sum_m / ((2*l + 1) as f64).sqrt())        
+
+            }// l
+        }// n'
     }// n
    
     p
@@ -149,11 +154,15 @@ mod tests{
     use super::*;
 
     fn is_very_close(x: f64, y: f64) -> bool{
-        // Are two numbers close to within an absolute tolerance? 
-        println!("\nleft = {}\nright = {}", x, y);
-        (x - y).abs() <= 1E-8
+        is_close(x, y, 1E-8)
     }
     
+
+    fn is_close(x: f64, y: f64, atol: f64) -> bool{
+        // Are two numbers close to within an absolute tolerance? 
+        println!("\nleft = {}\nright = {}", x, y);
+        (x - y).abs() <= atol
+    }
 
     #[test]
     fn test_c_100(){
@@ -191,7 +200,7 @@ mod tests{
     }
 
 
-     #[test]
+    #[test]
     fn test_c_211(){
         // Simple SOAP coefficent
 
@@ -206,6 +215,121 @@ mod tests{
         assert!(is_very_close(c_nlm(&vec![coord], &rbfs, 2, 1, 1, 0.5),
                               0.1795563639871126  // Python implementation
                               ));
+    }
+
+
+    #[test]
+    fn test_power_spectrum_methane(){
+        // Test the SOAP vector generated for a methane strucutre 
+        // (just RDKit generated)
+        
+	    std::fs::write("methane.xyz", 
+                       "5\n\n\
+                        C     0.00000   0.00000   0.00000\n\
+                        H    -0.65860  -0.85220  -0.30120\n\
+                        H    -0.45940   0.97110  -0.28590\n\
+                        H     0.08440  -0.02940   1.10060\n\
+                        H     1.02910  -0.10990  -0.41250\n")
+                       .expect("Failed to write methane.xyz!");
+  
+ 
+        let p = power_spectrum(&Structure::from("methane.xyz"),
+                               0,          // Atom index to expand about
+                               "H",        // Neighbour denisty
+                               2,          // n_max
+                               0,          // l_max
+                               2.0_f64,    // r_cut
+                               0.5_f64);   // σ_atom        
+ 
+        assert_eq!(p.len(), 3); // only (n=1, n'=1), (n=1, n'=2), (n=2, n'=2)
+                                // using only the unique pairs
+     
+        let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
+        
+        for i in 0..p.len(){
+            assert!(is_close(p[i], p_expected[i], 1E-5));
+        }
+
+        std::fs::remove_file("methane.xyz").expect("Could not remove file!");
+    }
+
+
+    #[test]
+    fn test_power_spectrum_methane_trns(){
+        // Test the SOAP vector is translationally invariant
+        
+	    std::fs::write("methane_trns.xyz", 
+                       "5\n\n\
+                        C     1.00000   0.00000   0.00000\n\
+                        H     0.34140  -0.85220  -0.30120\n\
+                        H     0.54060   0.97110  -0.28590\n\
+                        H     1.08440  -0.02940   1.10060\n\
+                        H     2.02910  -0.10990  -0.41250\n")
+                       .expect("Failed to write methane.xyz!");
+  
+ 
+        let p = power_spectrum(&Structure::from("methane_trns.xyz"),
+                               0, "H", 2, 0, 2.0_f64, 0.5_f64);        
+ 
+        let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
+        
+        for i in 0..p.len(){
+            assert!(is_close(p[i], p_expected[i], 1E-5));
+        }
+
+        std::fs::remove_file("methane_trns.xyz").expect("Could not remove file!");
+    }
+
+    #[test]
+    fn test_power_spectrum_methane_rot(){
+        // Test the SOAP vector is rotationally invariant
+        
+	    std::fs::write("methane_rot.xyz",
+                       "5\n\n\
+                        C     0.00000   0.00000   0.00000\n\
+                        H    -0.82213065 -0.46572569 -0.598265 \n\
+                        H    -0.41587856  0.67019903  0.78339049 \n\
+                        H     0.54036726 -0.82165307  0.50219273\n\
+                        H     0.73410205  0.52779665 -0.65100379\n")
+                       .expect("Failed to write methane.xyz!");
+  
+ 
+        let p = power_spectrum(&Structure::from("methane_rot.xyz"),
+                               0, "H", 2, 0, 2.0_f64, 0.5_f64);        
+ 
+        let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
+        
+        for i in 0..p.len(){
+            assert!(is_close(p[i], p_expected[i], 1E-5));
+        }
+
+        std::fs::remove_file("methane_rot.xyz").expect("Could not remove file!");
+    }
+
+    #[test]
+    fn test_power_spectrum_methane_disp(){
+        // Test the SOAP vector isn't the same for all input coordinates
+        
+	    std::fs::write("methane_disp.xyz",
+                       "5\n\n\
+                        C     0.00000   0.00000   0.00000\n\
+                        H    -0.52213065 -0.46572569 -0.598265 \n\
+                        H    -0.713487856  0.67019903  0.78339049 \n\
+                        H     0.84036726 -0.82165307  0.50219273\n\
+                        H     0.13410205  0.52779665 -0.65100379\n")
+                       .expect("Failed to write methane.xyz!");
+  
+ 
+        let p = power_spectrum(&Structure::from("methane_disp.xyz"),
+                               0, "H", 2, 0, 2.0_f64, 0.5_f64);        
+ 
+        let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
+        
+        for i in 0..p.len(){
+            assert!(! is_close(p[i], p_expected[i], 1E-5));
+        }
+
+        std::fs::remove_file("methane_disp.xyz").expect("Could not remove file!");
     }
 
 
