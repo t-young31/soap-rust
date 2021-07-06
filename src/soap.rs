@@ -152,6 +152,10 @@ fn power_spectrum(structure:      &Structure,
 mod tests{
 
     use super::*;
+    use crate::geometry::CartesianCoordinate;
+    use rand::thread_rng;
+    use rand::distributions::{Distribution, Uniform};
+ 
 
     fn is_very_close(x: f64, y: f64) -> bool{
         is_close(x, y, 1E-8)
@@ -163,6 +167,19 @@ mod tests{
         println!("\nleft = {}\nright = {}", x, y);
         (x - y).abs() <= atol
     }
+
+    
+    fn write_methane_xyz(){
+        std::fs::write("methane.xyz", 
+                       "5\n\n\
+                        C     0.00000   0.00000   0.00000\n\
+                        H    -0.65860  -0.85220  -0.30120\n\
+                        H    -0.45940   0.97110  -0.28590\n\
+                        H     0.08440  -0.02940   1.10060\n\
+                        H     1.02910  -0.10990  -0.41250\n")
+                       .expect("Failed to write methane.xyz!");
+    }
+
 
     #[test]
     fn test_c_100(){
@@ -223,15 +240,7 @@ mod tests{
         // Test the SOAP vector generated for a methane strucutre 
         // (just RDKit generated)
         
-	    std::fs::write("methane.xyz", 
-                       "5\n\n\
-                        C     0.00000   0.00000   0.00000\n\
-                        H    -0.65860  -0.85220  -0.30120\n\
-                        H    -0.45940   0.97110  -0.28590\n\
-                        H     0.08440  -0.02940   1.10060\n\
-                        H     1.02910  -0.10990  -0.41250\n")
-                       .expect("Failed to write methane.xyz!");
-  
+	    write_methane_xyz(); 
  
         let p = power_spectrum(&Structure::from("methane.xyz"),
                                0,          // Atom index to expand about
@@ -332,5 +341,102 @@ mod tests{
         std::fs::remove_file("methane_disp.xyz").expect("Could not remove file!");
     }
 
+    fn cnlm_integrand(coord:       CartesianCoordinate,
+                      cart_nbrs:   &Vec<CartesianCoordinate>,
+                      rbfs:        &RadialBasisFunctions, 
+                      n:           usize,
+                      l:           usize,
+                      m:           i32,
+                      a:           f64) -> f64 {
+        /*
+
+        c_nlm = ∭  g_n(r) Y_lm(θ, φ) Σ exp(-1/2σ^2 |r - R_i|^2)  dr
+               all                   i
+
+        where i sums over neighbours and R_i is the position of the neighbour and
+        a = 1 / 2σ^2
+        */
+        
+        let mut g_n = 0_f64;
+        let sphr_coord = coord.to_polar();
+        let l_i32 = l as i32;
+
+        for n_prime in 0..rbfs.n_max(){
+            g_n += rbfs.g[[n-1, l]].beta[n_prime]       // Β_nn'l r^l e^(-αr^2)
+                   * sphr_coord.r.powi(l_i32)
+                   * (-rbfs.phi[[n_prime, l]].alpha * sphr_coord.r * sphr_coord.r).exp();
+        }
+        
+        let y_lm = sphr_harm(&sphr_coord, l_i32, m);
+
+        let mut sum = 0_f64;
+        for i in 0..cart_nbrs.len(){
+            sum += (-a * ((coord.x - cart_nbrs[i].x).powi(2)
+                          + (coord.y - cart_nbrs[i].y).powi(2)
+                          + (coord.z - cart_nbrs[i].z).powi(2))
+                   ).exp();
+        }
+
+        g_n * y_lm * sum
+    }
+
+
+    fn mc_integral(cart_nbrs:   &Vec<CartesianCoordinate>,
+                   rbfs:        &RadialBasisFunctions, 
+                   n:           usize,
+                   l:           usize,
+                   m:           i32,
+                   a:           f64) -> f64{
+        /* Integrate the triple integral in 3D
+        */
+        let mut rng = thread_rng();
+
+        let length = 4_f64;
+        let v = length.powi(3);       // Uniform around (0, 0, 0)  x in [-l/2, l/2]
+        let uniform = Uniform::<f64>::new_inclusive(-length/2_f64, length/2_f64);
+        
+        let n_points = 100000_usize;
+        let mut sum = 0_f64;
+
+        for _ in 0..n_points{
+            let coord = CartesianCoordinate{x: uniform.sample(&mut rng),
+                                            y: uniform.sample(&mut rng),
+                                            z: uniform.sample(&mut rng)};
+
+            sum += cnlm_integrand(coord, cart_nbrs, rbfs, n, l, m, a);
+        }
+
+        v * sum / (n_points as f64)
+     }
+
+    #[test]
+    fn test_numerical_c_n00(){
+   
+        write_methane_xyz();
+        let methane = Structure::from("methane.xyz");
+ 
+        let mut rbfs: RadialBasisFunctions = Default::default();
+        rbfs.construct(2, 0, 2.0);
+    
+        let a = 1_f64 / (2_f64 * 0.5_f64.powi(2));   // 1/2σ^2, σ = 0.5 Å
+
+
+        for n in vec![1, 2]{
+            let analytic_c_100 = c_nlm(&methane.sphr_neighbours(0, "H", 2.0),
+                                       &rbfs,
+                                       n,
+                                       0,
+                                       0,
+                                       0.5_f64);
+
+            // As the C atom is at the origin the neighbours r - R_i are just the 
+            // coordinates
+            let numerical_c_100 = mc_integral(&(methane.coordinates[1..].to_vec()),
+                                          &rbfs, n, 0, 0, a);
+
+            // Monte Carlo integration is slow, so use a sloppy tolerance
+            assert!(is_close(numerical_c_100, analytic_c_100, 0.1));
+        }
+    }
 
 }
