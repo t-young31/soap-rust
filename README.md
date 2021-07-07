@@ -5,7 +5,7 @@ Smooth overlap of atomic positions (SOAP)[1] evaluated in rust using GTO radial 
 [2] *L. Himanen et al., Comput. Phys. Commun., 247, 106949.*
 
 
-## Installation  
+##  Installation  
 To install from source first [install rust](https://www.rust-lang.org/tools/install), clone the repository, then build:
 
 ```bash
@@ -17,7 +17,7 @@ cargo build --release
 > **_NOTE:_**  Requires linking against [GSL](https://www.gnu.org/software/gsl/).
 
 
-## Usage
+##  Usage  
 Execute the binary built in the *targets/release/* directory. For example to generate the 'SOAP vector' for the H-atom density in a methane molecule:
 
 ```bash
@@ -31,7 +31,7 @@ target/release/soap --help
 ```
 
 
-## Testing
+## Testing  
 Rust provides a awesome testing platform so the tests can be run  with:
 
 ```bash
@@ -39,5 +39,5 @@ cargo test
 ```
 
 
-## Disclaimer
+##  Disclaimer  
 Absolutely no guarantee of correctness. Please fork this repository and submit a pull request if there are egregious errors!
