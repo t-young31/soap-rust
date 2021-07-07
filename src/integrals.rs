@@ -62,10 +62,15 @@ pub fn gaussian_2m(m: i32, k: f64) -> f64{
     /*
     Calculate a gaussian integral of the form below, from wikipedia:
 
-        ∞                             ((2m - 1)!!
-        ∫ dr r^(2m) e^(-kr^2) =  -----------------------
-        0                       (k^m 2^(m+1)))(pi / k)^1/2
+        ∞                             (2m - 1)!!  (pi / k)^1/2
+        ∫ dr r^(2m) e^(-kr^2) =      ----------- ----------
+        0                              2^(m+1))       k^m
+                                        
+                                         ^
+                                         a        
 
+    a is precomputed 
+    
     Arguments:
         m (int): Half of the r exponent
 
@@ -74,9 +79,33 @@ pub fn gaussian_2m(m: i32, k: f64) -> f64{
     Returns:
         (float): Value of the integral
     */
-    let d_factorial = factorial_f(2_i32*m) / (2_f64.powi(m) * factorial_f(m));
+    // The overflowing version:
+    // let a = factorial_f(2_i32*m) / (2_f64.powi(m) * factorial_f(m) * 2_f64.powi(m+1)));
 
-    d_factorial * (std::f64::consts::PI / k).sqrt() / (k.powi(m) * 2_f64.powi(m+1))
+    let a = vec![512_f64/654729075_f64,    // m = -10
+                 -256_f64/34459425_f64, 
+                 128_f64/2027025_f64, 
+                -64_f64/135135_f64,
+                 32_f64/10395_f64,
+                -16_f64/945_f64,
+                 8_f64/105_f64, 
+                -4_f64/15_f64, 
+                 2_f64/3_f64, 
+                -1_f64,                     
+                 0.5_f64,                 // m = 0
+                 0.25_f64,
+                 3_f64/8_f64,
+                 15_f64/16_f64,
+                 105_f64/32_f64,
+                 945_f64/64_f64, 
+                 10395_f64/128_f64, 
+                 135135_f64/256_f64,
+                 2027025_f64/512_f64, 
+                 34459425_f64/1024_f64,
+                 654729075_f64/2048_f64  // m = 10
+                 ];
+
+    a[(m+10) as usize] * (std::f64::consts::PI / k).sqrt() / (k.powi(m)) //*
 }
 
 

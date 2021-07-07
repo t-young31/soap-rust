@@ -64,13 +64,13 @@ fn c_nlm(sphr_coords: &Vec<SphericalPolarCoordinate>,
 }
 
 
-fn power_spectrum(structure:      &Structure,
-                  atom_idx:       usize,
-                  nbr_element:    &str,
-                  n_max:          usize,
-                  l_max:          usize,
-                  r_cut:          f64,
-                  sigma_at:       f64) -> Vec<f64>{
+pub fn power_spectrum(structure:      &Structure,
+                      atom_idx:       usize,
+                      nbr_element:    &str,
+                      n_max:          usize,
+                      l_max:          usize,
+                      r_cut:          f64,
+                      sigma_at:       f64) -> Vec<f64>{
     /*
     Compute the vector comprising the elements of the power spectrum
     p_nn'l, where n, n'∈[1, n_max] and l ∈ [0, l_max]. n_max must be at
@@ -104,29 +104,44 @@ fn power_spectrum(structure:      &Structure,
     let mut rbfs: RadialBasisFunctions = Default::default();
     rbfs.construct(n_max, l_max, r_cut);
 
+    let mut c = vec![];
     
-    let mut p = Vec::<f64>::with_capacity(sphr_nbrs.len() * n_max * (l_max + 1));
+    for n in 1..=n_max{
+        let mut c_n = vec![];
+        
+        for l in 0..=l_max{
+            let mut c_nl = vec![];
+            let l_i32 = l as i32;
+            
+            for m_idx in 0..=2*l{   // 2l + 1 terms
+
+                let m = (m_idx as i32) - l_i32;
+                c_nl.push(c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at));
+
+            }// m
+            c_n.push(c_nl);
+
+        }// l
+    
+        c.push(c_n);
+    }// n
+
+ 
+    let mut p = Vec::<f64>::with_capacity(n_max * n_max * (l_max + 1));
 
     for n in 1..=n_max{
         for n_prime in n..=n_max{
             for l in 0..=l_max{
 
-                let l_i32 = l as i32;
                 let mut sum_m = 0_f64;
             
                 for m_idx in 0..=2*l{   // 2l + 1 terms
 
-                    let m = (m_idx as i32) - l_i32;
-                    let _c_nlm = c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at);
-
-                    sum_m += c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at) 
-                             * c_nlm(&sphr_nbrs, &rbfs, n_prime, l, m, sigma_at);
-
-                    println!("n = {}, l = {}, m = {}", n, l, m); 
+                    sum_m += c[n-1][l][m_idx] * c[n_prime-1][l][m_idx]; 
+                    //println!("n = {}, l = {}, m = {}", n, l, (m_idx as i32)-l as i32); 
 
                 }// m
 
-                // Append the normalised component of the power spectrum
                 p.push(sum_m / ((2*l + 1) as f64).sqrt())        
 
             }// l
@@ -169,8 +184,8 @@ mod tests{
     }
 
     
-    fn write_methane_xyz(){
-        std::fs::write("methane.xyz", 
+    fn write_methane_xyz(i: usize){
+        std::fs::write(format!("methane{}.xyz", i), 
                        "5\n\n\
                         C     0.00000   0.00000   0.00000\n\
                         H    -0.65860  -0.85220  -0.30120\n\
@@ -240,9 +255,9 @@ mod tests{
         // Test the SOAP vector generated for a methane strucutre 
         // (just RDKit generated)
         
-	    write_methane_xyz(); 
+	    write_methane_xyz(0); 
  
-        let p = power_spectrum(&Structure::from("methane.xyz"),
+        let p = power_spectrum(&Structure::from("methane0.xyz"),
                                0,          // Atom index to expand about
                                "H",        // Neighbour denisty
                                2,          // n_max
@@ -259,7 +274,7 @@ mod tests{
             assert!(is_close(p[i], p_expected[i], 1E-5));
         }
 
-        std::fs::remove_file("methane.xyz").expect("Could not remove file!");
+        std::fs::remove_file("methane0.xyz").expect("Could not remove file!");
     }
 
 
@@ -412,8 +427,8 @@ mod tests{
     #[test]
     fn test_numerical_c_n00(){
    
-        write_methane_xyz();
-        let methane = Structure::from("methane.xyz");
+        write_methane_xyz(1);
+        let methane = Structure::from("methane1.xyz");
  
         let mut rbfs: RadialBasisFunctions = Default::default();
         rbfs.construct(2, 0, 2.0);
@@ -432,11 +447,47 @@ mod tests{
             // As the C atom is at the origin the neighbours r - R_i are just the 
             // coordinates
             let numerical_c_100 = mc_integral(&(methane.coordinates[1..].to_vec()),
-                                          &rbfs, n, 0, 0, a);
+                                              &rbfs, n, 0, 0, a);
 
             // Monte Carlo integration is slow, so use a sloppy tolerance
             assert!(is_close(numerical_c_100, analytic_c_100, 0.1));
         }
+
+        std::fs::remove_file("methane1.xyz").expect("Could not remove file!");
     }
+
+
+    #[test]
+    fn test_numerical_c_11m(){
+   
+        write_methane_xyz(2);
+        let methane = Structure::from("methane2.xyz");
+ 
+        let mut rbfs: RadialBasisFunctions = Default::default();
+        rbfs.construct(2, 1, 2.0);
+    
+        let numerical_c11m_s = vec![-0.19955, -0.23227, -0.010524];
+        
+        for m in vec![-1, 0, 1]{
+            let analytic_c_11m = c_nlm(&methane.sphr_neighbours(0, "H", 2.0),
+                                       &rbfs, 1, 1, m, 0.5_f64);
+
+            /* Uncomment for true MC evaluation
+
+            let a = 1_f64 / (2_f64 * 0.5_f64.powi(2));   // 1/2σ^2, σ = 0.5 Å
+            let numerical_c_11m = mc_integral(&(methane.coordinates[1..].to_vec()),
+                                             &rbfs, 1, 1, m, a);
+            println!("m = {} I = {}", m, numerical_c_11m);
+            */
+
+            // Monte Carlo is slow, so use pre-computed values
+            let numerical_c_11m = numerical_c11m_s[(m+1) as usize];
+
+            assert!(is_close(numerical_c_11m, analytic_c_11m, 0.1));
+        }
+
+        std::fs::remove_file("methane2.xyz").expect("Could not remove file!");
+    }
+
 
 }
