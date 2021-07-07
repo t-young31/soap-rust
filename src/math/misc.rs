@@ -32,6 +32,8 @@ mod tests{
         assert_eq!(factorial(0), 1);
         assert_eq!(factorial(1), 1);
         assert_eq!(factorial(3), 6);
+
+        assert!((factorial_f(0) - 1_f64).abs() < 1E-8)
     }
 
 } // Tests

@@ -489,5 +489,76 @@ mod tests{
         std::fs::remove_file("methane2.xyz").expect("Could not remove file!");
     }
 
+    
+    fn normalised(p: &Vec<f64>) -> Vec<f64>{
+        // Normalise: p -> p / √(p.p)
+        let mut norm = 0_f64;
+
+        for i in 0..p.len(){
+            norm += p[i]*p[i];
+        }
+        let sqrt_norm = norm.sqrt();
+
+        let mut p_normed = Vec::<f64>::with_capacity(p.len());
+        for i in 0..p.len(){
+            p_normed.push(p[i].clone()/sqrt_norm);
+        }
+         
+        p_normed
+    }
+
+
+    #[test]
+    fn test_soap_kernel(){
+        // Test that the power spectrum can be used as a similariry measure
+    
+
+        write_methane_xyz(3);
+        std::fs::write("methane_long.xyz", 
+                       "5\n\n\
+                        C    -3.13849        0.66522        0.00000\n\
+                        H     1.41112        0.71579        0.00000\n\
+                        H    -3.49515       -0.25764       -0.40745\n\
+                        H    -3.49515        1.47951       -0.59550\n\
+                        H    -3.49516        0.77379        1.00295\n")
+                       .expect("Failed to write methane.xyz!");
+
+        std::fs::write("methane_short.xyz", 
+                       "5\n\n\
+                        C    -3.13849        0.66522        0.00000\n\
+                        H    -1.87886        0.67786        0.00000\n\
+                        H    -3.49515       -0.25764       -0.40745\n\
+                        H    -3.49515        1.47951       -0.59550\n\
+                        H    -3.49516        0.77379        1.00295\n")
+                       .expect("Failed to write methane.xyz!");
+        
+        let p_0 = normalised(&power_spectrum(&Structure::from("methane3.xyz"),
+                                           0, "H", 6, 6, 6.0_f64, 0.5_f64)); 
+
+        let p_1 = normalised(&power_spectrum(&Structure::from("methane_short.xyz"),
+                                              0, "H", 6, 6, 6.0_f64, 0.5_f64));         
+        
+        let p_2 = normalised(&power_spectrum(&Structure::from("methane_long.xyz"),
+                                    0, "H", 6, 6, 6.0_f64, 0.5_f64)); 
+
+        let mut k_01 = 0_f64;
+        let mut k_02 = 0_f64;
+
+        for i in 0..p_0.len(){
+            k_01 += p_0[i] * p_1[i];
+            k_02 += p_0[i] * p_2[i];
+        }
+         
+        let zeta = 4_i32;
+
+        // The short displacement of the H atom should be a strucutre more similar
+        // than the larger displacement, thus have a larger similariry (k value)
+        assert!(k_01.powi(zeta) > k_02.powi(zeta));
+        
+        std::fs::remove_file("methane3.xyz").expect("Could not remove file!");
+        std::fs::remove_file("methane_short.xyz").expect("Could not remove file!");
+        std::fs::remove_file("methane_long.xyz").expect("Could not remove file!");
+    }
+
 
 }
