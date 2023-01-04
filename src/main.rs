@@ -126,11 +126,10 @@ mod tests {
         );
         let sum1:f64 = p.iter().sum();
         let sum2:f64 = p2.iter().sum();
-        let sum:f64 = p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).powf(2.)).sum();
-        println!("sum :{:?} {:?} {:?}",sum1,sum2,sum);
-        println!("{:?}", p);
-        println!("{:?}", p2);
-        println!("{:?}",p.len());
+        let sum:f64 = p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).abs()).sum();
+        println!("sum of soap before ratation p1: {:?}",sum1);
+        println!("sum of soap after ratation p2: {:?}",sum2);
+        println!("sum of (p1 - p2): {:?}",sum);
 
         std::fs::remove_file("nacl.xyz").expect("Could not remove file!");
         std::fs::remove_file("nacl_r.xyz").expect("Could not remove file!");

@@ -19,8 +19,8 @@ impl CartesianCoordinate{
         let r: f64 = self.sq_distance().sqrt();
 
         SphericalPolarCoordinate{r:     r,
-                                 phi: self.y.atan2(self.x),
-                                 theta:   (self.z / r).acos()}
+                                 theta: self.y.atan2(self.x),
+                                 phi:   (self.z / r).acos()}
     }
 
     pub fn shift_then_to_polar(&self, 
