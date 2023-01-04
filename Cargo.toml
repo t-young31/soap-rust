@@ -8,7 +8,6 @@ clap = {version = "^4", features=["derive"]}
 rand = "*"
 GSL = "*"
 ndarray = "*"
-ndarray-linalg = { version = "0.13" }
 
 [profile.release]
 panic = "abort"
