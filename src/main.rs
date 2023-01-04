@@ -48,7 +48,7 @@ struct Cli {
     #[arg(
         long,
         default_value_t = 0.5,
-        help = "Smoothness of the neihgbour denisty, in Å"
+        help = "Smoothness of the neighbour denisty, in Å"
     )]
     sigma: f64,
 }

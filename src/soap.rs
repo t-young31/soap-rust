@@ -83,8 +83,7 @@ pub fn power_spectrum(
 
         atom_idx (int): Index of the atom to expand about
 
-        nbr_element (str): String of the element about which to expand
-                           the neighbour density e.g. "C"
+        species (Vec<String>): The symbols of the elements to consider. e.g. H
 
         n_max (int): Maximum radial expansion basis (>1)
 
@@ -118,9 +117,6 @@ pub fn power_spectrum(
                     // 2l + 1 terms
 
                     let m = (m_idx as i32) - l_i32;
-                    // let a = 1_f64 / (2_f64 * sigma_at.powi(2)); // 1/2σ^2s
-                    // let numerical_c_nlm = mc_integral(&sphr_nbrs, &rbfs, n, l, m, a);
-                    // c_nl.push(numerical_c_nlm);
 
                     c_nl.push(c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at));
                 } // m
