@@ -55,9 +55,7 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    println!("species: {:?}",cli.species);
-    println!("filename: {:?}",cli.filename);
-    println!("center: {:?}",cli.center);
+
     let p = soap::power_spectrum(
         &Structure::from(&cli.filename),
         cli.center,
@@ -124,8 +122,8 @@ mod tests {
             6.,
             0.5,
         );
-        let sum1:f64 = p.iter().sum();
-        let sum2:f64 = p2.iter().sum();
+        let sum1:f64 = p.iter().map(|x|x.abs()).sum();
+        let sum2:f64 = p2.iter().map(|x|x.abs()).sum();
         let sum:f64 = p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).abs()).sum();
         println!("sum of soap before ratation p1: {:?}",sum1);
         println!("sum of soap after ratation p2: {:?}",sum2);
