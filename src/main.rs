@@ -1,72 +1,139 @@
 extern crate clap;
-use clap::{Arg, App, value_t};
 use crate::structure::Structure;
+use clap::Parser;
+mod basis;
+mod geometry;
 mod integrals;
 mod math;
-mod geometry;
-mod basis;
-mod structure;
 mod soap;
+mod structure;
 
+#[derive(Parser)]
+#[command(name = "soap-rust")]
+#[command(author = "Tom Young")]
+#[command(version = "1.0.1")]
+#[command(about = "Smooth overlap of atomic positions (SOAP) \
+in rust", long_about = None)]
+struct Cli {
+    #[arg(
+        long,
+        short,
+        help = "The .xyz to calculate a SOAP for. e.g. methane.xyz"
+    )]
+    filename: String,
+    #[arg(
+        long,
+        short,
+        help = "The atom index about which the neighbour\
+    density will be expanded. e.g. 0"
+    )]
+    center: usize,
+    #[arg(
+        long,
+        short,
+        help = "The symbols of the elements to consider. e.g. H"
+    )]
+    species: Vec<String>,
+    #[arg(long, default_value_t = 6)]
+    nmax: usize,
+    #[arg(long, default_value_t = 6)]
+    lmax: usize,
+    #[arg(
+        long,
+        short,
+        default_value_t = 6.,
+        help = "Cut off distance for the SOAP in Å"
+    )]
+    rcut: f64,
+    #[arg(
+        long,
+        default_value_t = 0.5,
+        help = "Smoothness of the neihgbour denisty, in Å"
+    )]
+    sigma: f64,
+}
 
 fn main() {
-
- let args = App::new("soap-rust")
-                        .version("1.0.0a")
-                        .author("Tom Young")
-                        .about("Smooth overlap of atomic positions (SOAP) \
-                                in rust")
-                        .arg(Arg::with_name("xyz_filename")
-                             .short("file")
-                             .long("xyz_filename")
-                             .required(true)
-                             .help("The .xyz to calculate a SOAP for. e.g. methane.xyz")
-                             .index(1))
-                        .arg(Arg::with_name("atom_idx")
-                              .short("i")
-                              .long("atom_idx")
-                              .required(true)
-                              .help("The atom index about which the neighbour\
-                                     density will be expanded. e.g. 0")
-                              .index(2))
-                        .arg(Arg::with_name("nbr")
-                              .short("e")
-                              .long("neighbour_element")
-                              .required(true)
-                              .help("The symbol of the elements neihgbouring\
-                                     that defined by atom_idx to consider. e.g. H")
-                              .index(3))
-                        .arg(Arg::with_name("n_max")
-                              .short("n")
-                              .long("n_max")
-                              .required(false)
-                              .default_value("6"))
-                        .arg(Arg::with_name("l_max")
-                              .short("l")
-                              .long("l_max")
-                              .required(false)
-                              .default_value("6"))
-                        .arg(Arg::with_name("r_cut")
-                              .short("r")
-                              .long("r_cut")
-                              .required(false)
-                              .default_value("2")
-                              .help("Cut off distance for the SOAP in Å"))
-                        .arg(Arg::with_name("sigma_at")
-                              .short("s")
-                              .long("sigma_at")
-                              .required(false)
-                              .default_value("0.5")
-                              .help("Smoothness of the neihgbour denisty, in Å"))
-                        .get_matches();
-
-   let p = soap::power_spectrum(&Structure::from(args.value_of("xyz_filename").unwrap()),
-                                value_t!(args, "atom_idx", usize).unwrap_or_else(|e| e.exit()),
-                                args.value_of("nbr").unwrap(),                
-                                value_t!(args, "n_max", usize).unwrap_or_else(|e| e.exit()),  
-                                value_t!(args, "l_max", usize).unwrap_or_else(|e| e.exit()), 
-                                value_t!(args, "r_cut", f64).unwrap_or_else(|e| e.exit()), 
-                                value_t!(args, "sigma_at", f64).unwrap_or_else(|e| e.exit()));    
-
+    let cli = Cli::parse();
+    println!("species: {:?}",cli.species);
+    println!("filename: {:?}",cli.filename);
+    println!("center: {:?}",cli.center);
+    let p = soap::power_spectrum(
+        &Structure::from(&cli.filename),
+        cli.center,
+        &cli.species,
+        cli.nmax,
+        cli.lmax,
+        cli.rcut,
+        cli.sigma,
+    );
     println!("{:?}", p);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{soap, structure::Structure};
+    
+    #[test]
+    fn test_rotate(){
+        // for Test
+
+        std::fs::write(
+                format!("nacl.xyz"),
+                    "8\n\n\
+                        Na       0.00000000       2.82010000       0.00000000\n\
+                        Cl       0.00000000       2.82010000       2.82010000\n\
+                        Na       0.00000000       0.00000000       2.82010000\n\
+                        Cl       0.00000000       0.00000000       0.00000000\n\
+                        Na       2.82010000       2.82010000       2.82010000\n\
+                        Cl       2.82010000       2.82010000       0.00000000\n\
+                        Na       2.82010000       0.00000000       0.00000000\n\
+                        Cl       2.82010000       0.00000000       2.82010000\n",
+            )
+            .expect("Failed to write nacl.xyz!");
+        
+        std::fs::write( // rotate with 90 degree with axis 0,1,1 
+                format!("nacl_r.xyz"),
+                    "8\n\n\
+                    Na      -1.99411183       1.41005000       1.41005000\n\
+                    Cl       0.00000000       2.82010000       2.82010000\n\
+                    Na       1.99411183       1.41005000       1.41005000\n\
+                    Cl       0.00000000       0.00000000       0.00000000\n\
+                    Na       0.00000000       4.81421183       0.82598817\n\
+                    Cl      -1.99411183       3.40416183      -0.58406183\n\
+                    Na       0.00000000       1.99411183      -1.99411183\n\
+                    Cl       1.99411183       3.40416183      -0.58406183\n",
+            )
+            .expect("Failed to write nacl_r.xyz!");
+
+        let p = soap::power_spectrum(
+            &Structure::from("./nacl.xyz"),
+            0,
+            &vec!["Cl".to_owned(),"Na".to_owned()],
+            6,
+            6,
+            6.,
+            0.5,
+        );
+        let p2 = soap::power_spectrum(
+            &Structure::from("./nacl_r.xyz"),
+            0,
+            &vec!["Cl".to_owned(),"Na".to_owned()],
+            6,
+            6,
+            6.,
+            0.5,
+        );
+        let sum1:f64 = p.iter().sum();
+        let sum2:f64 = p2.iter().sum();
+        let sum:f64 = p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).powf(2.)).sum();
+        println!("sum :{:?} {:?} {:?}",sum1,sum2,sum);
+        println!("{:?}", p);
+        println!("{:?}", p2);
+        println!("{:?}",p.len());
+
+        std::fs::remove_file("nacl.xyz").expect("Could not remove file!");
+        std::fs::remove_file("nacl_r.xyz").expect("Could not remove file!");
+    }
+
 }

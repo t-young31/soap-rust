@@ -19,8 +19,8 @@ impl CartesianCoordinate{
         let r: f64 = self.sq_distance().sqrt();
 
         SphericalPolarCoordinate{r:     r,
-                                 theta: self.y.atan2(self.x),
-                                 phi:   (self.z / r).acos()}
+                                 phi: self.y.atan2(self.x),
+                                 theta:   (self.z / r).acos()}
     }
 
     pub fn shift_then_to_polar(&self, 
@@ -99,8 +99,8 @@ mod tests{
         let coordinate = CartesianCoordinate{x: 0.0, y: 0.0, z: 1.0 }.to_polar();
         
         assert!(is_close(coordinate.r, 1.0, 1E-8));
-        assert!(is_close(coordinate.theta, 0.0, 1E-8));
         assert!(is_close(coordinate.phi, 0.0, 1E-8));
+        assert!(is_close(coordinate.theta, 0.0, 1E-8));
 
         // non-unity distance
         let coordinate = CartesianCoordinate{x: 1.0, y: 1.0, z: 0.0 }.to_polar();
@@ -109,14 +109,14 @@ mod tests{
         // non-zero angles
         let coordinate = CartesianCoordinate{x: 1.0, y: 0.0, z: 0.0 }.to_polar();
         assert!(is_close(coordinate.r, 1.0, 1E-8));
-        assert!(is_close(coordinate.theta, 0.0, 1E-8));
-        assert!(is_close(coordinate.phi, FRAC_PI_2, 1E-8));
+        assert!(is_close(coordinate.phi, 0.0, 1E-8));
+        assert!(is_close(coordinate.theta, FRAC_PI_2, 1E-8));
 
         // non-positive quadrant
         let coordinate = CartesianCoordinate{x: -1.0, y: 0.0, z: 0.0}.to_polar();
         assert!(is_close(coordinate.r, 1.0, 1E-8));
-        assert!(is_close(coordinate.theta.abs(), PI, 1E-8));
-        assert!(is_close(coordinate.phi, FRAC_PI_2, 1E-8));
+        assert!(is_close(coordinate.phi.abs(), PI, 1E-8));
+        assert!(is_close(coordinate.theta, FRAC_PI_2, 1E-8));
     }
 
 }
