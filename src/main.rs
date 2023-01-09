@@ -111,7 +111,7 @@ mod tests {
             6,
             6,
             6.,
-            0.5,
+            1.0,
         );
         let p2 = soap::power_spectrum(
             &Structure::from("./nacl_r.xyz"),
@@ -120,7 +120,7 @@ mod tests {
             6,
             6,
             6.,
-            0.5,
+            1.0,
         );
         let sum1:f64 = p.iter().map(|x|x.abs()).sum();
         let sum2:f64 = p2.iter().map(|x|x.abs()).sum();
@@ -131,6 +131,11 @@ mod tests {
 
         std::fs::remove_file("nacl.xyz").expect("Could not remove file!");
         std::fs::remove_file("nacl_r.xyz").expect("Could not remove file!");
+
+        // assert the sum of (p1 - p2) should not be too big
+        assert!(sum / sum1 < 0.1);
+        assert!(sum / sum2 < 0.1);
+
     }
 
 }

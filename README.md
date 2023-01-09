@@ -21,7 +21,7 @@ cargo build --release
 Execute the binary built in the *targets/release/* directory. For example to generate the 'SOAP vector' for the density of all of the Na and Cl in a Nacl lattice:
 
 ```bash
-target/release/soap -f=./nacl_test.xyz -c=0 -s Na -s  Cl
+target/release/soap -f ./nacl.xyz -c 0 -s Na -s Cl
 ```
 
 where the first argument is the .xyz structure file, the second the atom index of the origin and the third the element comprising the neighbours. See the help for all options:

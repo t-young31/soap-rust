@@ -8,12 +8,3 @@ clap = {version = "^4", features=["derive"]}
 rand = "*"
 GSL = "*"
 ndarray = "*"
-
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
-opt-level = "s"
-
-[profile.dev]
-opt-level = "s"

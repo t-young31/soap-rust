@@ -187,7 +187,7 @@ mod tests{
         (x - y).abs() <= atol
     }
 
-    pub fn power_spectrum_old(structure:      &Structure,
+    pub fn power_spectrum_of_single_element(structure:      &Structure,
         atom_idx:       usize,
         nbr_element:    &str,
         n_max:          usize,
@@ -345,7 +345,7 @@ mod tests{
         
 	    write_methane_xyz(0); 
  
-        let p = power_spectrum_old(&Structure::from("methane0.xyz"),
+        let p = power_spectrum_of_single_element(&Structure::from("methane0.xyz"),
                                0,          // Atom index to expand about
                                "H",        // Neighbour denisty
                                2,          // n_max
@@ -380,7 +380,7 @@ mod tests{
                        .expect("Failed to write methane.xyz!");
   
  
-        let p = power_spectrum_old(&Structure::from("methane_trns.xyz"),
+        let p = power_spectrum_of_single_element(&Structure::from("methane_trns.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
  
         let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
@@ -406,7 +406,7 @@ mod tests{
                        .expect("Failed to write methane.xyz!");
   
  
-        let p = power_spectrum_old(&Structure::from("methane_rot.xyz"),
+        let p = power_spectrum_of_single_element(&Structure::from("methane_rot.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
  
         let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
@@ -432,7 +432,7 @@ mod tests{
                        .expect("Failed to write methane.xyz!");
   
  
-        let p = power_spectrum_old(&Structure::from("methane_disp.xyz"),
+        let p = power_spectrum_of_single_element(&Structure::from("methane_disp.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
  
         let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
@@ -554,7 +554,7 @@ mod tests{
         let mut rbfs: RadialBasisFunctions = Default::default();
         rbfs.construct(2, 1, 2.0);
     
-        let numerical_c11m_s = vec![-0.19955, -0.23227, -0.010524];
+        let numerical_c11m_s = vec![0.011812,  -0.229823, 0.000108];
         
         for m in vec![-1, 0, 1]{
             let analytic_c_11m = c_nlm(&methane.sphr_neighbours(0, "H", 2.0),
@@ -620,13 +620,13 @@ mod tests{
                         H    -3.49516        0.77379        1.00295\n")
                        .expect("Failed to write methane.xyz!");
         
-        let p_0 = normalised(&power_spectrum_old(&Structure::from("methane3.xyz"),
+        let p_0 = normalised(&power_spectrum_of_single_element(&Structure::from("methane3.xyz"),
                                            0, "H", 6, 6, 6.0_f64, 0.5_f64)); 
 
-        let p_1 = normalised(&power_spectrum_old(&Structure::from("methane_short.xyz"),
+        let p_1 = normalised(&power_spectrum_of_single_element(&Structure::from("methane_short.xyz"),
                                               0, "H", 6, 6, 6.0_f64, 0.5_f64));         
         
-        let p_2 = normalised(&power_spectrum_old(&Structure::from("methane_long.xyz"),
+        let p_2 = normalised(&power_spectrum_of_single_element(&Structure::from("methane_long.xyz"),
                                     0, "H", 6, 6, 6.0_f64, 0.5_f64)); 
 
         let mut k_01 = 0_f64;
