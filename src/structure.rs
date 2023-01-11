@@ -270,8 +270,8 @@ mod tests{
         let coord = &nbr_coords[0];
 
         assert!(is_very_close(coord.r, 1_f64));
-        assert!(is_very_close(coord.theta, 0_f64));
-        assert!(is_very_close(coord.phi, std::f64::consts::FRAC_PI_2));
+        assert!(is_very_close(coord.phi, 0_f64));
+        assert!(is_very_close(coord.theta, std::f64::consts::FRAC_PI_2));
     
         std::fs::remove_file("h2.xyz").expect("Could not remove file!"); 
 

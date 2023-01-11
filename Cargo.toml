@@ -1,10 +1,10 @@
 [package]
 name = "soap"
 version = "0.0.1"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-clap = "*"
+clap = {version = "^4", features=["derive"]}
 rand = "*"
 GSL = "*"
 ndarray = "*"

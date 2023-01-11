@@ -64,13 +64,15 @@ fn c_nlm(sphr_coords: &Vec<SphericalPolarCoordinate>,
 }
 
 
-pub fn power_spectrum(structure:      &Structure,
-                      atom_idx:       usize,
-                      nbr_element:    &str,
-                      n_max:          usize,
-                      l_max:          usize,
-                      r_cut:          f64,
-                      sigma_at:       f64) -> Vec<f64>{
+pub fn power_spectrum(
+    structure: &Structure,
+    atom_idx: usize,
+    species: &Vec<String>,
+    n_max: usize,
+    l_max: usize,
+    r_cut: f64,
+    sigma_at: f64,
+) -> Vec<f64> {
     /*
     Compute the vector comprising the elements of the power spectrum
     p_nn'l, where n, n'∈[1, n_max] and l ∈ [0, l_max]. n_max must be at
@@ -81,13 +83,12 @@ pub fn power_spectrum(structure:      &Structure,
 
         atom_idx (int): Index of the atom to expand about
 
-        nbr_element (str): String of the element about which to expand
-                           the neighbour density e.g. "C"
-        
+        species (Vec<String>): The symbols of the elements to consider. e.g. H
+
         n_max (int): Maximum radial expansion basis (>1)
 
         l_max (int): Maximum angular expansion basis (≥0)
-    
+
         r_cut (float): Cut-off distance used in the construction of the
                        radial basis functions
 
@@ -96,61 +97,64 @@ pub fn power_spectrum(structure:      &Structure,
     Returns:
         (vector(float)): Concatenated elements
     */
-   
-    let sphr_nbrs = structure.sphr_neighbours(atom_idx, 
-                                              nbr_element,
-                                              r_cut);
- 
+
     let mut rbfs: RadialBasisFunctions = Default::default();
     rbfs.construct(n_max, l_max, r_cut);
 
     let mut c = vec![];
-    
-    for n in 1..=n_max{
-        let mut c_n = vec![];
-        
-        for l in 0..=l_max{
-            let mut c_nl = vec![];
-            let l_i32 = l as i32;
-            
-            for m_idx in 0..=2*l{   // 2l + 1 terms
 
-                let m = (m_idx as i32) - l_i32;
-                c_nl.push(c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at));
+    for atom_number in species {
+        let mut cz = vec![];
+        let sphr_nbrs = structure.sphr_neighbours(atom_idx, atom_number, r_cut);
+        for n in 1..=n_max {
+            let mut c_n = vec![];
 
-            }// m
-            c_n.push(c_nl);
+            for l in 0..=l_max {
+                let mut c_nl = vec![];
+                let l_i32 = l as i32;
 
-        }// l
-    
-        c.push(c_n);
-    }// n
+                for m_idx in 0..=2 * l {
+                    // 2l + 1 terms
 
- 
-    let mut p = Vec::<f64>::with_capacity(n_max * n_max * (l_max + 1));
+                    let m = (m_idx as i32) - l_i32;
 
-    for n in 1..=n_max{
-        for n_prime in n..=n_max{
-            for l in 0..=l_max{
+                    c_nl.push(c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at));
+                } // m
+                c_n.push(c_nl);
+            } // l
 
-                let mut sum_m = 0_f64;
-            
-                for m_idx in 0..=2*l{   // 2l + 1 terms
+            cz.push(c_n);
+        } // n
+        c.push(cz); // z
+    }
 
-                    sum_m += c[n-1][l][m_idx] * c[n_prime-1][l][m_idx]; 
-                    //println!("n = {}, l = {}, m = {}", n, l, (m_idx as i32)-l as i32); 
+    let mut p = Vec::<f64>::with_capacity(species.len() * n_max * n_max * (l_max + 1));
 
-                }// m
+    for zi in 0..species.len() {
+        for zj in 0..species.len() {
+            for n in 1..=n_max {
+                for n_prime in n..=n_max {
+                    for l in 0..=l_max {
+                        if zi <= zj {
+                            let mut sum_m = 0_f64;
 
-                p.push(sum_m / ((2*l + 1) as f64).sqrt())        
+                            for m_idx in 0..=2 * l {
+                                // 2l + 1 terms
 
-            }// l
-        }// n'
-    }// n
-   
+                                sum_m += c[zi][n - 1][l][m_idx] * c[zj][n_prime - 1][l][m_idx];
+                                // println!("n = {}, l = {}, m = {}", n, l, (m_idx as i32)-l as i32);
+                            } // m
+
+                            p.push(sum_m / ((2 * l + 1) as f64).sqrt())
+                        }
+                    } // l
+                } // n'
+            } // n
+        }
+    }
+
     p
 }
-
 
 
 /*
@@ -183,7 +187,91 @@ mod tests{
         (x - y).abs() <= atol
     }
 
-    
+    pub fn power_spectrum_of_single_element(structure:      &Structure,
+        atom_idx:       usize,
+        nbr_element:    &str,
+        n_max:          usize,
+        l_max:          usize,
+        r_cut:          f64,
+        sigma_at:       f64) -> Vec<f64>{
+        /*
+        Compute the vector comprising the elements of the power spectrum
+        p_nn'l, where n, n'∈[1, n_max] and l ∈ [0, l_max]. n_max must be at
+        least 2.
+
+        Arguments:
+        structure: strucutre (box/molecule/system) defining the geometry
+
+        atom_idx (int): Index of the atom to expand about
+
+        nbr_element (str): String of the element about which to expand
+                    the neighbour density e.g. "C"
+
+        n_max (int): Maximum radial expansion basis (>1)
+
+        l_max (int): Maximum angular expansion basis (≥0)
+
+        r_cut (float): Cut-off distance used in the construction of the
+                radial basis functions
+
+        sigma_at (float): Width of the Gaussians used in the SOAP
+
+        Returns:
+        (vector(float)): Concatenated elements
+        */
+
+        let sphr_nbrs = structure.sphr_neighbours(atom_idx, 
+                                        nbr_element,
+                                        r_cut);
+
+        let mut rbfs: RadialBasisFunctions = Default::default();
+        rbfs.construct(n_max, l_max, r_cut);
+
+        let mut c = vec![];
+
+        for n in 1..=n_max{
+            let mut c_n = vec![];
+
+            for l in 0..=l_max{
+                let mut c_nl = vec![];
+                let l_i32 = l as i32;
+
+                for m_idx in 0..=2*l{   // 2l + 1 terms
+
+                    let m = (m_idx as i32) - l_i32;
+                    c_nl.push(c_nlm(&sphr_nbrs, &rbfs, n, l, m, sigma_at));
+
+                }// m
+                c_n.push(c_nl);
+
+            }// l
+
+            c.push(c_n);
+        }// n
+
+
+        let mut p = Vec::<f64>::with_capacity(n_max * n_max * (l_max + 1));
+
+        for n in 1..=n_max{
+            for n_prime in n..=n_max{
+            for l in 0..=l_max{
+
+                let mut sum_m = 0_f64;
+
+                for m_idx in 0..=2*l{   // 2l + 1 terms
+                    sum_m += c[n-1][l][m_idx] * c[n_prime-1][l][m_idx]; 
+                    //println!("n = {}, l = {}, m = {}", n, l, (m_idx as i32)-l as i32); 
+                }// m
+
+                    p.push(sum_m / ((2*l + 1) as f64).sqrt())        
+
+                }// l
+            }// n'
+        }// n
+
+        p
+    }
+
     fn write_methane_xyz(i: usize){
         std::fs::write(format!("methane{}.xyz", i), 
                        "5\n\n\
@@ -257,7 +345,7 @@ mod tests{
         
 	    write_methane_xyz(0); 
  
-        let p = power_spectrum(&Structure::from("methane0.xyz"),
+        let p = power_spectrum_of_single_element(&Structure::from("methane0.xyz"),
                                0,          // Atom index to expand about
                                "H",        // Neighbour denisty
                                2,          // n_max
@@ -292,7 +380,7 @@ mod tests{
                        .expect("Failed to write methane.xyz!");
   
  
-        let p = power_spectrum(&Structure::from("methane_trns.xyz"),
+        let p = power_spectrum_of_single_element(&Structure::from("methane_trns.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
  
         let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
@@ -318,7 +406,7 @@ mod tests{
                        .expect("Failed to write methane.xyz!");
   
  
-        let p = power_spectrum(&Structure::from("methane_rot.xyz"),
+        let p = power_spectrum_of_single_element(&Structure::from("methane_rot.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
  
         let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
@@ -344,7 +432,7 @@ mod tests{
                        .expect("Failed to write methane.xyz!");
   
  
-        let p = power_spectrum(&Structure::from("methane_disp.xyz"),
+        let p = power_spectrum_of_single_element(&Structure::from("methane_disp.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
  
         let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
@@ -466,7 +554,7 @@ mod tests{
         let mut rbfs: RadialBasisFunctions = Default::default();
         rbfs.construct(2, 1, 2.0);
     
-        let numerical_c11m_s = vec![-0.19955, -0.23227, -0.010524];
+        let numerical_c11m_s = vec![0.011812,  -0.229823, 0.000108];
         
         for m in vec![-1, 0, 1]{
             let analytic_c_11m = c_nlm(&methane.sphr_neighbours(0, "H", 2.0),
@@ -532,13 +620,13 @@ mod tests{
                         H    -3.49516        0.77379        1.00295\n")
                        .expect("Failed to write methane.xyz!");
         
-        let p_0 = normalised(&power_spectrum(&Structure::from("methane3.xyz"),
+        let p_0 = normalised(&power_spectrum_of_single_element(&Structure::from("methane3.xyz"),
                                            0, "H", 6, 6, 6.0_f64, 0.5_f64)); 
 
-        let p_1 = normalised(&power_spectrum(&Structure::from("methane_short.xyz"),
+        let p_1 = normalised(&power_spectrum_of_single_element(&Structure::from("methane_short.xyz"),
                                               0, "H", 6, 6, 6.0_f64, 0.5_f64));         
         
-        let p_2 = normalised(&power_spectrum(&Structure::from("methane_long.xyz"),
+        let p_2 = normalised(&power_spectrum_of_single_element(&Structure::from("methane_long.xyz"),
                                     0, "H", 6, 6, 6.0_f64, 0.5_f64)); 
 
         let mut k_01 = 0_f64;

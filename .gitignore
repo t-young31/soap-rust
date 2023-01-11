@@ -1,4 +1,5 @@
 
 target/
-
+*.xyz
 Cargo.lock
+.vscode
