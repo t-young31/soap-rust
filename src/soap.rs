@@ -419,7 +419,7 @@ mod tests{
         let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
         
         for i in 0..p.len(){
-            assert!(is_close(p[i], p_expected[i], 1E-4));
+            assert!(is_close(p[i], p_expected[i], 1E-5));
         }
 
         std::fs::remove_file("methane_rot.xyz").expect("Could not remove file!");
