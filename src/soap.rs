@@ -306,7 +306,6 @@ mod tests{
  
         assert_eq!(p.len(), 3); // only (n=1, n'=1), (n=1, n'=2), (n=2, n'=2)
                                 // using only the unique pairs
-        println!("{:?}", p);
         let p_expected = vec![3159.900127_f64, 3299.339767_f64, 3444.932580_f64];
         
         for i in 0..p.len(){
@@ -359,7 +358,6 @@ mod tests{
  
         let p = power_spectrum_of_single_element(&Structure::from("methane_rot.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
-        println!("{:?}", p);
         let p_expected = vec![3159.900127_f64, 3299.339767_f64, 3444.932580_f64];
         
         for i in 0..p.len(){
