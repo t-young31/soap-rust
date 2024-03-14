@@ -576,7 +576,7 @@ mod tests{
             // Monte Carlo is slow, so use pre-computed values
             let numerical_c_11m = numerical_c11m_s[(m+1) as usize];
 
-            assert!(is_close(numerical_c_11m, analytic_c_11m, 0.15));
+            assert!(is_close(numerical_c_11m, analytic_c_11m, 0.1));
         }
 
         std::fs::remove_file("methane2.xyz").expect("Could not remove file!");
