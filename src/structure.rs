@@ -6,7 +6,6 @@ use crate::geometry::SphericalPolarCoordinate;
 use std::fs::File;
 use std::io::prelude::*;
 
-
 #[derive(Default)]
 pub struct Structure{
 
@@ -65,12 +64,12 @@ impl Structure{
             }
 
 
-            structure.atomic_symbols.push(items[0].clone().to_string());
+            structure.atomic_symbols.push(items[0].to_string());
             
             // NOTE: Clone is delibrerate for array positioning
-            let coord = CartesianCoordinate{x: items[1].clone().parse().expect("Failed to read x"),
-                                            y: items[2].clone().parse().expect("Failed to read y"),
-                                            z: items[3].clone().parse().expect("Failed to read z"),};
+            let coord = CartesianCoordinate{x: items[1].parse().expect("Failed to read x"),
+                                            y: items[2].parse().expect("Failed to read y"),
+                                            z: items[3].parse().expect("Failed to read z"),};
 
             structure.coordinates.push(coord);
             line_n += 1;
@@ -128,6 +127,38 @@ impl Structure{
         }
         
         coords
+    }
+
+
+    pub fn get_ndarray_coords(&self) -> ndarray::Array2<f64>{
+        // Convert the coordinates to a 2D array
+        let mut coords = ndarray::Array2::<f64>::zeros((self.n_atoms(), 3));
+
+        for i in 0..self.n_atoms(){
+            coords[[i, 0]] = self.coordinates[i].x;
+            coords[[i, 1]] = self.coordinates[i].y;
+            coords[[i, 2]] = self.coordinates[i].z;
+        }
+
+        coords
+    }
+
+    pub fn rotate_coords(&self, orth_matrix: &ndarray::Array2<f64>) -> Self{
+        // Rotate the coordinates by the given orthogonal matrix
+        let mut new_coords = Vec::<CartesianCoordinate>::with_capacity(self.n_atoms());
+
+        let ndarray_coords = self.get_ndarray_coords();
+        let rotated_coords = ndarray_coords.dot(orth_matrix);
+
+        for i in 0..self.n_atoms(){
+            new_coords.push(CartesianCoordinate{x: rotated_coords[[i, 0]],
+                                                y: rotated_coords[[i, 1]],
+                                                z: rotated_coords[[i, 2]]});
+        }
+        let new_structure = Structure{coordinates: new_coords,
+                                  atomic_symbols: self.atomic_symbols.clone()};
+
+        new_structure
     }
 
 }

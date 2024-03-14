@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 use rgsl::legendre::associated_polynomials::legendre_sphPlm; 
 use crate::geometry::SphericalPolarCoordinate;
 
@@ -9,20 +11,23 @@ pub fn sphr_harm(coord: &SphericalPolarCoordinate,
     /*
 
     */
+    let x = coord.theta.cos();
+    let m_f64 = m as f64;
+    let l_f64 = l as f64;
+    
     if m == 0 {
-        return 0.2820947917738781434740_f64   // 1/2 √(1/π)
+        return ((2f64 * l_f64 + 1f64) / (4f64 * PI)).powf(0.5) 
+                * rgsl::legendre::associated_polynomials::legendre_Plm(l, m, x)  
     }
     
-    let x = coord.theta.cos();
-    let m_float = m as f64;
     let factor = std::f64::consts::SQRT_2 * (-1_f64).powi(m % 2);
 
     if m < 0 {           // |m|
-        return factor * (-m_float * coord.phi).sin() * legendre_sphPlm(l, -m, x) 
+        return factor * (-m_f64 * coord.phi).sin() * legendre_sphPlm(l, -m, x) 
     }
 
     else { // m > 0
-        return factor * (m_float * coord.phi).cos() * legendre_sphPlm(l, m, x)
+        return factor * (m_f64 * coord.phi).cos() * legendre_sphPlm(l, m, x)
     }
 }
 

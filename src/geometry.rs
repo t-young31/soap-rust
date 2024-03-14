@@ -33,6 +33,7 @@ impl CartesianCoordinate{
                             z: &self.z - origin.z}.to_polar()
 
     }
+
 }
 
 #[derive(Clone)]
@@ -59,6 +60,14 @@ pub struct SphericalPolarCoordinate{
     pub phi:   f64,
 }
 
+impl SphericalPolarCoordinate{
+    pub fn to_cartesian(&self) -> CartesianCoordinate{
+        // Convert this spherical polar coordinate into Cartesian
+        CartesianCoordinate{x: self.r * self.theta.sin() * self.phi.cos(),
+                            y: self.r * self.theta.sin() * self.phi.sin(),
+                            z: self.r * self.theta.cos()}
+    }
+}
 /*
       /$$$$$$$$ /$$$$$$$$  /$$$$$$  /$$$$$$$$ /$$$$$$
      |__  $$__/| $$_____/ /$$__  $$|__  $$__//$$__  $$
