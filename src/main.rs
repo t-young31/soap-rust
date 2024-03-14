@@ -71,7 +71,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use crate::{soap, structure::Structure};
-    
+    use ndarray::array;
+
     #[test]
     fn test_rotate(){
         // for Test
@@ -140,4 +141,91 @@ mod tests {
 
     }
 
+
+    #[test]
+    fn test_rotate_2(){
+        // A more complicated test, for rotating a zeolit structure called ABW
+        let xyz_path = "ABW.xyz";
+        std::fs::write( 
+            format!("{}", xyz_path),
+                "36\n\n\
+                 O    4.936500    1.313500    3.089671\n\
+                 O    4.936500    3.940500    5.680329\n\
+                 O    0.000000    3.940500    7.474671\n\
+                 O    9.873000    3.940500    7.474671\n\
+                 O    0.000000    1.313500    1.295329\n\
+                 O    9.873000    1.313500    1.295329\n\
+                 O    3.060630    0.000000    4.385000\n\
+                 O    3.060630    5.254000    4.385000\n\
+                 O    6.812370    0.000000    4.385000\n\
+                 O    6.812370    5.254000    4.385000\n\
+                 O    6.812370    2.627000    4.385000\n\
+                 O    3.060630    2.627000    4.385000\n\
+                 O    7.997130    2.627000    0.000000\n\
+                 O    7.997130    2.627000    8.770000\n\
+                 O    1.875870    2.627000    0.000000\n\
+                 O    1.875870    2.627000    8.770000\n\
+                 O    1.875870    0.000000    0.000000\n\
+                 O    1.875870    0.000000    8.770000\n\
+                 O    1.875870    5.254000    0.000000\n\
+                 O    1.875870    5.254000    8.770000\n\
+                 O    7.997130    0.000000    0.000000\n\
+                 O    7.997130    0.000000    8.770000\n\
+                 O    7.997130    5.254000    0.000000\n\
+                 O    7.997130    5.254000    8.770000\n\
+                 O    2.468250    1.313500    2.192500\n\
+                 O    7.404750    3.940500    6.577500\n\
+                 O    7.404750    1.313500    2.192500\n\
+                 O    2.468250    3.940500    6.577500\n\
+                Si    3.384464    1.313500    3.514139\n\
+                Si    6.488536    3.940500    5.255861\n\
+                Si    6.488536    1.313500    3.514139\n\
+                Si    3.384464    3.940500    5.255861\n\
+                Si    8.320964    3.940500    7.899139\n\
+                Si    1.552036    1.313500    0.870861\n\
+                Si    1.552036    3.940500    7.899139\n\
+                Si    8.320964    1.313500    0.870861\n\
+                ",
+        )
+        .expect("Failed to write ABW.xyz!");
+        let structure = Structure::from(xyz_path);
+        let orth_matrix = array![
+        [1.0, 0.0, 0.0],
+        [0.0, 0.0, -1.0],
+        [0.0, 1.0, 0.0]
+        ]; // rotate 90 degree along x axis
+        let structure_r = structure.rotate_coords(&orth_matrix);
+        let p = soap::power_spectrum(
+            &structure,
+            0,
+            &vec!["O".to_owned(),"Si".to_owned()],
+            6,
+            6,
+            3_f64,
+            0.5,
+        );
+        let p2 = soap::power_spectrum(
+            &structure_r,
+            0,
+            &vec!["O".to_owned(),"Si".to_owned()],
+            6,
+            6,
+            3_f64,
+            0.5,
+        );
+        let sum1:f64 = p.iter().map(|x|x.abs()).sum();
+        let sum2:f64 = p2.iter().map(|x|x.abs()).sum();
+        let sum:f64 = p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).abs()).sum();
+        println!("{:?}", p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).abs()).collect::<Vec<f64>>());
+        println!("sum of soap before ratation p1: {:?}",sum1);
+        println!("sum of soap after ratation p2: {:?}",sum2);
+        println!("sum of (p1 - p2): {:?}",sum);
+
+        // assert the sum of (p1 - p2) should not be too big
+        println!("sum / sum1: {:?}",sum / sum1);
+        println!("sum / sum2: {:?}",sum / sum2);
+        std::fs::remove_file(xyz_path).expect("Could not remove file!");
+        assert!(sum / sum1 < 0.1);
+        assert!(sum / sum2 < 0.1);
+    }
 }
