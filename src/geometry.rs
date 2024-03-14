@@ -67,12 +67,6 @@ impl SphericalPolarCoordinate{
                             y: self.r * self.theta.sin() * self.phi.sin(),
                             z: self.r * self.theta.cos()}
     }
-    pub fn distance(&self, other: &SphericalPolarCoordinate) -> f64{
-        // Distance between two points in spherical polars
-        ((self.r*other.r).powi(2) + 
-         (self.r*other.r).powi(2) - 
-         2.0*self.r*other.r*(self.theta*other.theta).cos()).sqrt()
-    }
 }
 /*
       /$$$$$$$$ /$$$$$$$$  /$$$$$$  /$$$$$$$$ /$$$$$$
