@@ -572,13 +572,9 @@ mod tests{
                                             &rbfs, 1, 1, m, a);
             println!("m = {} I = {}", m, numerical_c_11m);
             */
-            let a = 1_f64 / (2_f64 * 0.5_f64.powi(2));   // 1/2σ^2, σ = 0.5 Å
-            let numerical_c_11m = mc_integral(&(methane.coordinates[1..].to_vec()),
-                                            &rbfs, 1, 1, m, a);
-            println!("m = {} I = {}", m, numerical_c_11m);
 
             // Monte Carlo is slow, so use pre-computed values
-            // let numerical_c_11m = numerical_c11m_s[(m+1) as usize];
+            let numerical_c_11m = numerical_c11m_s[(m+1) as usize];
 
             assert!(is_close(numerical_c_11m, analytic_c_11m, 0.15));
         }
