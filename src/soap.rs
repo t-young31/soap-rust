@@ -60,7 +60,7 @@ fn c_nlm(sphr_coords: &Vec<SphericalPolarCoordinate>,
                     
             // let alpha = rbfs.phi[[n_prime, l]].alpha;
             // sum += 2f64 * PI * rbfs.g[[n-1, l as usize]].beta[n_prime] * (alpha+a).powf(-l_f64-0.5)
-            //             * (a * coord.r).powf(l_f64)
+            //             * (a * coord.r).powi(2).powf(l_f64 / 2f64)
             //             * rgsl::gamma_beta::gamma::gamma(0.5+l_f64)
             //             / rgsl::gamma_beta::gamma::gamma(1f64+l_f64)
             //             * rgsl::hypergeometric::hyperg_1F1(l_f64+0.5, l_f64+1f64, (a*coord.r).powi(2)/(a+alpha))
