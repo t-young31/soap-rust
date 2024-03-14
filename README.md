@@ -35,8 +35,10 @@ target/release/soap --help
 Rust provides a awesome testing platform so the tests can be run  with:
 
 ```bash
-cargo test
+cargo test -- --test-threads 1
 ```
+
+Where the `--test-threads 1` prevent the error on writing the same test .xyz file by multiple processes.
 
 
 ##  Disclaimer  

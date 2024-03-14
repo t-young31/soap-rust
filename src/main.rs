@@ -126,25 +126,18 @@ mod tests {
         let sum1:f64 = p.iter().map(|x|x.abs()).sum();
         let sum2:f64 = p2.iter().map(|x|x.abs()).sum();
         let sum:f64 = p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).abs()).sum();
-        println!("sum of soap before ratation p1: {:?}",sum1);
-        println!("sum of soap after ratation p2: {:?}",sum2);
-        println!("sum of (p1 - p2): {:?}",sum);
 
         std::fs::remove_file("nacl.xyz").expect("Could not remove file!");
         std::fs::remove_file("nacl_r.xyz").expect("Could not remove file!");
-
-        // assert the sum of (p1 - p2) should not be too big
-        println!("sum / sum1: {:?}",sum / sum1);
-        println!("sum / sum2: {:?}",sum / sum2);
-        assert!(sum / sum1 < 0.1);
-        assert!(sum / sum2 < 0.1);
+        assert!(sum / sum1 < 1E-6);
+        assert!(sum / sum2 < 1E-6);
 
     }
 
 
     #[test]
     fn test_rotate_2(){
-        // A more complicated test, for rotating a zeolit structure called ABW
+        // A more complicated test, for rotating the convenrional cell of a zeolite structure called ABW
         let xyz_path = "ABW.xyz";
         std::fs::write( 
             format!("{}", xyz_path),
@@ -216,16 +209,12 @@ mod tests {
         let sum1:f64 = p.iter().map(|x|x.abs()).sum();
         let sum2:f64 = p2.iter().map(|x|x.abs()).sum();
         let sum:f64 = p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).abs()).sum();
-        println!("{:?}", p.iter().zip(p2.iter()).map(|(x1,x2)|(x1-x2).abs()).collect::<Vec<f64>>());
-        println!("sum of soap before ratation p1: {:?}",sum1);
-        println!("sum of soap after ratation p2: {:?}",sum2);
-        println!("sum of (p1 - p2): {:?}",sum);
 
-        // assert the sum of (p1 - p2) should not be too big
-        println!("sum / sum1: {:?}",sum / sum1);
-        println!("sum / sum2: {:?}",sum / sum2);
         std::fs::remove_file(xyz_path).expect("Could not remove file!");
-        assert!(sum / sum1 < 0.1);
-        assert!(sum / sum2 < 0.1);
+        println!("{:?}", sum1);
+        println!("{:?}", sum2);
+        println!("{:?}", sum);
+        assert!(sum / sum1 < 1E-6);
+        assert!(sum / sum2 < 1E-6);
     }
 }

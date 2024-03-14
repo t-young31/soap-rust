@@ -16,7 +16,8 @@ pub fn sphr_harm(coord: &SphericalPolarCoordinate,
     let l_f64 = l as f64;
     
     if m == 0 {
-        return ((2f64*l_f64+1f64) / (4f64*PI)).powf(0.5) * rgsl::legendre::associated_polynomials::legendre_Plm(l, m, x)  
+        return ((2f64 * l_f64 + 1f64) / (4f64 * PI)).powf(0.5) 
+                * rgsl::legendre::associated_polynomials::legendre_Plm(l, m, x)  
     }
     
     let factor = std::f64::consts::SQRT_2 * (-1_f64).powi(m % 2);
