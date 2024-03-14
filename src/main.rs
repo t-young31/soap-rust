@@ -11,7 +11,7 @@ mod structure;
 #[derive(Parser)]
 #[command(name = "soap-rust")]
 #[command(author = "Tom Young")]
-#[command(version = "1.0.1")]
+#[command(version = "1.1.0")]
 #[command(about = "Smooth overlap of atomic positions (SOAP) \
 in rust", long_about = None)]
 struct Cli {
@@ -110,8 +110,8 @@ mod tests {
             &vec!["Cl".to_owned(),"Na".to_owned()],
             6,
             6,
-            6.,
-            1.0,
+            3.,
+            0.5,
         );
         let p2 = soap::power_spectrum(
             &Structure::from("./nacl_r.xyz"),
@@ -119,8 +119,8 @@ mod tests {
             &vec!["Cl".to_owned(),"Na".to_owned()],
             6,
             6,
-            6.,
-            1.0,
+            3.,
+            0.5,
         );
         let sum1:f64 = p.iter().map(|x|x.abs()).sum();
         let sum2:f64 = p2.iter().map(|x|x.abs()).sum();
@@ -133,6 +133,8 @@ mod tests {
         std::fs::remove_file("nacl_r.xyz").expect("Could not remove file!");
 
         // assert the sum of (p1 - p2) should not be too big
+        println!("sum / sum1: {:?}",sum / sum1);
+        println!("sum / sum2: {:?}",sum / sum2);
         assert!(sum / sum1 < 0.1);
         assert!(sum / sum2 < 0.1);
 

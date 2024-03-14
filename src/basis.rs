@@ -130,7 +130,6 @@ impl RadialBasisFunctions{
             // unique elements
             for i in 0..n_max{
                 for j in i..n_max{
-
                     s[[i, j]] = self.phi_overlap(i, j, l);
                     s[[j, i]] = s[[i, j]].clone();
                 }
@@ -179,7 +178,6 @@ pub struct RadialBasisFunction{
     */
     pub beta: Array1<f64>,       // {β_nil} over i
 }
-
 
 #[derive(Default)]
 pub struct PrimitiveBasisFunction{   // φ_nl(r) = r^l exp(-α_nl r^2)

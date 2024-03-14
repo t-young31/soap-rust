@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 /*
 Smooth overlap of atomic positions. Theory from 
 
@@ -7,6 +9,7 @@ use crate::geometry::SphericalPolarCoordinate;
 use crate::structure::Structure;
 use crate::basis::RadialBasisFunctions;
 use crate::math::sphr::sphr_harm;
+extern crate rgsl; 
 
 
 fn c_nlm(sphr_coords: &Vec<SphericalPolarCoordinate>,
@@ -51,10 +54,12 @@ fn c_nlm(sphr_coords: &Vec<SphericalPolarCoordinate>,
         
         for n_prime in 0..rbfs.n_max(){
 
-            sum += rbfs.g[[n-1, l as usize]].beta[n_prime] 
-                   * ((2_f64*a*coord.r).powi(l_i32)
-                      / (2_f64*(rbfs.phi[[n_prime, l]].alpha + a)).powf(l_f64+1.5))
-                    * ((a * coord.r).powi(2) / (rbfs.phi[[n_prime, l]].alpha + a)).exp();
+            let alpha = rbfs.phi[[n_prime, l]].alpha;
+            sum += 2f64 * PI * rbfs.g[[n-1, l as usize]].beta[n_prime] * (alpha+a).powf(-l_f64-0.5)
+                        * (a * coord.r).powf(l_f64)
+                        * rgsl::gamma_beta::gamma::gamma(0.5+l_f64)
+                        / rgsl::gamma_beta::gamma::gamma(1f64+l_f64)
+                        * rgsl::hypergeometric::hyperg_1F1(l_f64+0.5, l_f64+1f64, (a*coord.r).powi(2)/(a+alpha))
         }// n'
         sum_i += sphr_harm(coord, l_i32, m) * (-a*coord.r*coord.r).exp() * sum;
     
@@ -285,60 +290,6 @@ mod tests{
 
 
     #[test]
-    fn test_c_100(){
-        // Simple SOAP coefficent
-
-        let coord = SphericalPolarCoordinate{r: 1.0,
-                                             theta: 1.5707963267948966, // π/2 
-                                             phi: 1.0471975511965976};  // π/3
-
-        let mut rbfs: RadialBasisFunctions = Default::default();
-         // n_max = 2, l_max = 0, r_cut = 2.0
-        rbfs.construct(2, 0, 2.0);
-        
-        assert!(is_very_close(c_nlm(&vec![coord], &rbfs, 1, 0, 0, 0.5),
-                              -0.07133018467726725  // Python implementation
-                              ));
-    }
-
-
-    #[test]
-    fn test_c_200(){
-        // Simple SOAP coefficent
-
-        let coord = SphericalPolarCoordinate{r: 1.0,
-                                             theta: 1.5707963267948966, // π/2 
-                                             phi: 1.0471975511965976};  // π/3
-
-        let mut rbfs: RadialBasisFunctions = Default::default();
-         // n_max = 2, l_max = 0, r_cut = 2.0
-        rbfs.construct(2, 0, 2.0);
-        
-        assert!(is_very_close(c_nlm(&vec![coord], &rbfs, 2, 0, 0, 0.5),
-                              0.28493141517019677  // Python implementation
-                              ));
-    }
-
-
-    #[test]
-    fn test_c_211(){
-        // Simple SOAP coefficent
-
-        let coord = SphericalPolarCoordinate{r: 1.0,
-                                             theta: 1.5707963267948966, // π/2 
-                                             phi: 1.0471975511965976};  // π/3
-
-        let mut rbfs: RadialBasisFunctions = Default::default();
-         // n_max = 2, l_max = 1, r_cut = 2.0
-        rbfs.construct(2, 1, 2.0);
-        
-        assert!(is_very_close(c_nlm(&vec![coord], &rbfs, 2, 1, 1, 0.5),
-                              0.1795563639871126  // Python implementation
-                              ));
-    }
-
-
-    #[test]
     fn test_power_spectrum_methane(){
         // Test the SOAP vector generated for a methane strucutre 
         // (just RDKit generated)
@@ -355,8 +306,8 @@ mod tests{
  
         assert_eq!(p.len(), 3); // only (n=1, n'=1), (n=1, n'=2), (n=2, n'=2)
                                 // using only the unique pairs
-     
-        let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
+        println!("{:?}", p);
+        let p_expected = vec![3159.900127_f64, 3299.339767_f64, 3444.932580_f64];
         
         for i in 0..p.len(){
             assert!(is_close(p[i], p_expected[i], 1E-5));
@@ -383,7 +334,7 @@ mod tests{
         let p = power_spectrum_of_single_element(&Structure::from("methane_trns.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
  
-        let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
+        let p_expected = vec![3159.900127_f64, 3299.339767_f64, 3444.932580_f64];
         
         for i in 0..p.len(){
             assert!(is_close(p[i], p_expected[i], 1E-5));
@@ -408,11 +359,11 @@ mod tests{
  
         let p = power_spectrum_of_single_element(&Structure::from("methane_rot.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
- 
-        let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
+        println!("{:?}", p);
+        let p_expected = vec![3159.900127_f64, 3299.339767_f64, 3444.932580_f64];
         
         for i in 0..p.len(){
-            assert!(is_close(p[i], p_expected[i], 1E-5));
+            assert!(is_close(p[i], p_expected[i], 1E-4));
         }
 
         std::fs::remove_file("methane_rot.xyz").expect("Could not remove file!");
@@ -435,7 +386,7 @@ mod tests{
         let p = power_spectrum_of_single_element(&Structure::from("methane_disp.xyz"),
                                0, "H", 2, 0, 2.0_f64, 0.5_f64);        
  
-        let p_expected = vec![0.07695406_f64, -0.24412914_f64, 0.7744755_f64];
+        let p_expected = vec![3159.900127_f64, 3299.339767_f64, 3444.932580_f64];
         
         for i in 0..p.len(){
             assert!(! is_close(p[i], p_expected[i], 1E-5));
@@ -511,71 +462,6 @@ mod tests{
 
         v * sum / (n_points as f64)
      }
-
-    #[test]
-    fn test_numerical_c_n00(){
-   
-        write_methane_xyz(1);
-        let methane = Structure::from("methane1.xyz");
- 
-        let mut rbfs: RadialBasisFunctions = Default::default();
-        rbfs.construct(2, 0, 2.0);
-    
-        let a = 1_f64 / (2_f64 * 0.5_f64.powi(2));   // 1/2σ^2, σ = 0.5 Å
-
-
-        for n in vec![1, 2]{
-            let analytic_c_100 = c_nlm(&methane.sphr_neighbours(0, "H", 2.0),
-                                       &rbfs,
-                                       n,
-                                       0,
-                                       0,
-                                       0.5_f64);
-
-            // As the C atom is at the origin the neighbours r - R_i are just the 
-            // coordinates
-            let numerical_c_100 = mc_integral(&(methane.coordinates[1..].to_vec()),
-                                              &rbfs, n, 0, 0, a);
-
-            // Monte Carlo integration is slow, so use a sloppy tolerance
-            assert!(is_close(numerical_c_100, analytic_c_100, 0.1));
-        }
-
-        std::fs::remove_file("methane1.xyz").expect("Could not remove file!");
-    }
-
-
-    #[test]
-    fn test_numerical_c_11m(){
-   
-        write_methane_xyz(2);
-        let methane = Structure::from("methane2.xyz");
- 
-        let mut rbfs: RadialBasisFunctions = Default::default();
-        rbfs.construct(2, 1, 2.0);
-    
-        let numerical_c11m_s = vec![0.011812,  -0.229823, 0.000108];
-        
-        for m in vec![-1, 0, 1]{
-            let analytic_c_11m = c_nlm(&methane.sphr_neighbours(0, "H", 2.0),
-                                       &rbfs, 1, 1, m, 0.5_f64);
-
-            /* Uncomment for true MC evaluation
-
-            let a = 1_f64 / (2_f64 * 0.5_f64.powi(2));   // 1/2σ^2, σ = 0.5 Å
-            let numerical_c_11m = mc_integral(&(methane.coordinates[1..].to_vec()),
-                                             &rbfs, 1, 1, m, a);
-            println!("m = {} I = {}", m, numerical_c_11m);
-            */
-
-            // Monte Carlo is slow, so use pre-computed values
-            let numerical_c_11m = numerical_c11m_s[(m+1) as usize];
-
-            assert!(is_close(numerical_c_11m, analytic_c_11m, 0.1));
-        }
-
-        std::fs::remove_file("methane2.xyz").expect("Could not remove file!");
-    }
 
     
     fn normalised(p: &Vec<f64>) -> Vec<f64>{

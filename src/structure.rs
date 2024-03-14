@@ -65,12 +65,12 @@ impl Structure{
             }
 
 
-            structure.atomic_symbols.push(items[0].clone().to_string());
+            structure.atomic_symbols.push(items[0].to_string());
             
             // NOTE: Clone is delibrerate for array positioning
-            let coord = CartesianCoordinate{x: items[1].clone().parse().expect("Failed to read x"),
-                                            y: items[2].clone().parse().expect("Failed to read y"),
-                                            z: items[3].clone().parse().expect("Failed to read z"),};
+            let coord = CartesianCoordinate{x: items[1].parse().expect("Failed to read x"),
+                                            y: items[2].parse().expect("Failed to read y"),
+                                            z: items[3].parse().expect("Failed to read z"),};
 
             structure.coordinates.push(coord);
             line_n += 1;
